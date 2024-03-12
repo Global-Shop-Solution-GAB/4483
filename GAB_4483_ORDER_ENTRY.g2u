@@ -1,0 +1,2092 @@
+Program.Sub.ScreenSU.Start
+Gui.f_Main..Create
+Gui.f_Main..Caption("Order Entry")
+Gui.f_Main..Size(15000,10695)
+Gui.f_Main..MinX(0)
+Gui.f_Main..MinY(0)
+Gui.f_Main..Position(0,0)
+Gui.f_Main..BackColor(-2147483633)
+Gui.f_Main..MousePointer(0)
+Gui.f_Main..Event(UnLoad,f_Main_UnLoad)
+Gui.f_Main.GsGcMain.Create(GsGridControl)
+Gui.f_Main.GsGcMain.Size(14610,7425)
+Gui.f_Main.GsGcMain.Position(90,1680)
+Gui.f_Main.GsGcMain.Event(RowCellClick,GsGcMain_RowCellClick)
+Gui.f_Main.GsGcMain.Event(CellValueChanged,GsGcMain_CellValueChanged)
+Gui.f_Main.frmNotes.Create(Frame)
+Gui.f_Main.frmNotes.Size(5145,765)
+Gui.f_Main.frmNotes.Position(9540,765)
+Gui.f_Main.lblBatch.Create(Label,"Batch Notes:",True,1935,255,0,90,180,True,0,"Arial",8,-2147483633,0)
+Gui.f_Main.lblBatch.Parent("frmNotes")
+Gui.f_Main.txtBatch.Create(TextBox,"",True,4965,300,0,90,390,True,0,"Arial",8,-2147483643,1)
+Gui.f_Main.txtBatch.Parent("frmNotes")
+Gui.f_Main.cmdWeight.Create(Button)
+Gui.f_Main.cmdWeight.Size(1770,540)
+Gui.f_Main.cmdWeight.Position(7665,990)
+Gui.f_Main.cmdWeight.Caption("Weight and Square Footage")
+Gui.f_Main.cmdWeight.Event(Click,cmdWeight_Click)
+Gui.f_Main.picGSSLogo.Create(PictureBox)
+Gui.f_Main.picGSSLogo.Size(4125,960)
+Gui.f_Main.picGSSLogo.Position(5340,0)
+Gui.f_Main.cmdSave.Create(Button)
+Gui.f_Main.cmdSave.Size(1125,525)
+Gui.f_Main.cmdSave.Position(11115,9315)
+Gui.f_Main.cmdSave.Caption("Save Progress")
+Gui.f_Main.cmdSave.Event(Click,cmdSave_Click)
+Gui.f_Main.cmdFinish.Create(Button)
+Gui.f_Main.cmdFinish.Size(1125,525)
+Gui.f_Main.cmdFinish.Position(13575,9315)
+Gui.f_Main.cmdFinish.Caption("Send To Production")
+Gui.f_Main.cmdFinish.Event(Click,cmdFinish_Click)
+Gui.f_Main.cmdUpload.Create(Button)
+Gui.f_Main.cmdUpload.Size(1125,525)
+Gui.f_Main.cmdUpload.Position(12345,9315)
+Gui.f_Main.cmdUpload.Caption("Upload Lines")
+Gui.f_Main.cmdUpload.Event(Click,cmdUpload_Click)
+Gui.f_Macro..Create
+Gui.f_Macro..Caption("Cut Rite Macros")
+Gui.f_Macro..Size(4815,6750)
+Gui.f_Macro..MinX(0)
+Gui.f_Macro..MinY(0)
+Gui.f_Macro..Position(0,0)
+Gui.f_Macro..BackColor(-2147483633)
+Gui.f_Macro..MousePointer(0)
+Gui.f_Macro..Event(UnLoad,f_Macro_UnLoad)
+Gui.f_Macro..AlwaysOnTop(True)
+Gui.f_Macro..MaxButton(False)
+Gui.f_Macro..Sizeable(False)
+Gui.f_Macro.GsGcMacro.Create(GsGridControl)
+Gui.f_Macro.GsGcMacro.Size(4485,5655)
+Gui.f_Macro.GsGcMacro.Position(30,15)
+Gui.f_Macro.cmdMacroSave.Create(Button)
+Gui.f_Macro.cmdMacroSave.Size(900,375)
+Gui.f_Macro.cmdMacroSave.Position(3615,5835)
+Gui.f_Macro.cmdMacroSave.Caption("Save")
+Gui.f_Macro.cmdMacroSave.Event(Click,cmdMacroSave_Click)
+Program.Sub.ScreenSU.End
+
+Variable.Global.fPriceCatDisc.Declare(Float,0.00)
+Variable.Global.dDateDue.Declare(Date,1/1/1900)
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+V.Local.sGssLogo.Declare
+V.Local.sIcon.Declare
+V.Local.sRet.Declare
+
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	'POPULATE
+	F.Intrinsic.Control.Case(11560)
+		V.Passed.000201.Set("OE Form")
+		F.ODBC.Connection!con.Close
+	'SCRIPT 1
+	F.Intrinsic.Control.Case(11910)
+		F.Intrinsic.Control.If(V.Passed.000003.Trim,=,"")
+		F.Intrinsic.Control.ElseIf(V.Caller.Switches.Trim,=,"N")
+		F.Intrinsic.Control.AndIf(V.Passed.CHANGED.Trim,=,"Y")
+			F.Intrinsic.UI.Msgbox("Changes Must Be Saved Before Continuing","Order Entry")
+			F.Intrinsic.Control.End
+
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.InvokeWaitDialog("Loading Order Entry Form","OrderEntry")
+
+			F.Intrinsic.String.Build("{0}\ART\gss2.ico",V.Caller.GlobalDir,V.Local.sIcon)
+			F.Intrinsic.String.Build("{0}\ART\GAB_GSS_Logo_Green_Dash.png",V.Caller.GlobalDir,V.Local.sGssLogo)
+
+			GUI.f_Main..Icon(V.Local.sIcon)
+			GUI.f_Macro..Icon(V.Local.sIcon)
+			GUI.f_Main.picGSSLogo.Picture(V.Local.sGssLogo)
+
+			F.Intrinsic.UI.ChangeWaitStatus("Loading Price Categories",10,0,100)
+			F.Intrinsic.Control.CallSub(loadpricecategory)
+			F.Intrinsic.UI.ChangeWaitStatus("Setting Anchors",20,0,100)
+			F.Intrinsic.Control.CallSub(setanchors)
+			F.Intrinsic.UI.ChangeWaitStatus("Loading Data Table",30,0,100)
+			F.Intrinsic.Control.CallSub(loaddatatable)
+			F.Intrinsic.UI.ChangeWaitStatus("Loading Grid",90,0,100)
+			F.Intrinsic.Control.CallSub(loadgrid)
+			F.Intrinsic.UI.CloseWaitDialog
+			GUI.f_Main..Show
+			GUI.f_Main..WindowState(2)
+		F.Intrinsic.Control.EndIf
+	'POST SAVE
+	F.Intrinsic.Control.Case(11872)
+		F.Intrinsic.Control.If(V.Caller.Switches,=,"N")
+			F.Intrinsic.UI.Msgbox("Do You Want to Enter Line Data?","Order Entry",4,V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sRet,=,6)
+				F.Intrinsic.UI.InvokeWaitDialog("Loading Order Entry Form","OrderEntry")
+
+				F.Intrinsic.String.Build("{0}\GAB\GAS\gss2.ico",V.Caller.PluginsDir,V.Local.sIcon)
+				F.Intrinsic.String.Build("{0}\GAB\GAS\GAB_GSS_Logo_Green_Dash.png",V.Caller.PluginsDir,V.Local.sGssLogo)
+
+				GUI.f_Main..Icon(V.Local.sIcon)
+				GUI.f_Macro..Icon(V.Local.sIcon)
+				GUI.f_Main.picGSSLogo.Picture(V.Local.sGssLogo)
+
+				F.Intrinsic.UI.ChangeWaitStatus("Loading Price Categories",10,0,100)
+				F.Intrinsic.Control.CallSub(loadpricecategory)
+				F.Intrinsic.UI.ChangeWaitStatus("Setting Anchors",20,0,100)
+				F.Intrinsic.Control.CallSub(setanchors)
+				F.Intrinsic.UI.ChangeWaitStatus("Loading Data Table",30,0,100)
+				F.Intrinsic.Control.CallSub(loaddatatable)
+				F.Intrinsic.UI.ChangeWaitStatus("Loading Grid",90,0,100)
+				F.Intrinsic.Control.CallSub(loadgrid)
+				F.Intrinsic.UI.CloseWaitDialog
+				GUI.f_Main..Show
+				GUI.f_Main..WindowState(2)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndSelect
+
+Program.Sub.Main.End
+
+Program.Sub.LoadDataTable.Start
+V.Local.sDay.Declare
+V.Local.sLine.Declare
+V.Local.sMonth.Declare
+V.Local.sOrder.Declare
+V.Local.sSQL.Declare
+V.Local.sYear.Declare
+
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+' Due Date is in format YYYYMMDD in V.Passed.000024
+F.Intrinsic.String.Left(V.Passed.000024,4,V.Local.sYear)
+F.Intrinsic.String.Mid(V.Passed.000024,5,2,V.Local.sMonth)
+F.Intrinsic.String.Right(V.Passed.000024,2,V.Local.sDay)
+F.Intrinsic.Date.DateSerial(V.Local.sYear,V.Local.sMonth,V.Local.sDay,V.Global.dDateDue)
+
+F.Intrinsic.String.Build("select * from GAB_4483_OE_LINES where ORDER_NO = '{0}'",V.Local.sOrder,V.Local.sSQL)
+
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,True)
+	F.Data.DataTable.Create("dtMain",TRUE)
+	F.Data.DataTable.AddColumn("dtMain","ORDER_NO","STRING")
+	F.Data.DataTable.AddColumn("dtMain","LINE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","DATE_PROMISE","DATE")
+	F.Data.DataTable.AddColumn("dtMain","MATL","STRING")
+	F.Data.DataTable.AddColumn("dtMain","MATL_BROWSE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","PART_CODE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","PC_BROWSE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","QTY_ORDER","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","LENGTH","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","WIDTH","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","UOM","STRING")
+	'PART CODE DESCRIPTION
+	F.Data.DataTable.AddColumn("dtMain","DESCRIPTION","STRING")
+	'DOESN'T GO INTO PRODUCTION
+	F.Data.DataTable.AddColumn("dtMain","EXPORT","Boolean")
+	F.Data.DataTable.AddColumn("dtMain","FINISH","STRING")
+	F.Data.DataTable.AddColumn("dtMain","FN_BROWSE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","WGRAIN","Boolean")
+	F.Data.DataTable.AddColumn("dtMain","PRICE_SF","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","COST","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","DISCOUNT","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","EXTENSION","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","MANUAL_PRICE","Boolean")
+	F.Data.DataTable.AddColumn("dtMain","TAXABLE","Boolean")
+	F.Data.DataTable.AddColumn("dtMain","DRILL_CODE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","DC_BROWSE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","DRILL_PRICE","FLOAT")
+	'LOOKUP FOR LABEL - TEXT CODES
+	F.Data.DataTable.AddColumn("dtMain","NOTES","STRING")
+	F.Data.DataTable.AddColumn("dtMain","NT_LOOKUP","STRING")
+	'DROP DOWN LIST OF WORK CENTERS IN THE MACH DEPARTMENT - INCLUDING WORK GROUPS
+	F.Data.DataTable.AddColumn("dtMain","MCCODE","STRING")
+	F.Data.DataTable.AddColumn("dtMain","ATTN_ID","Boolean")
+	F.Data.DataTable.AddColumn("dtMain","ADD_ROW","STRING")
+	F.Data.DataTable.AddColumn("dtMain","DELETE_ROW","STRING")
+	F.Data.DataTable.AddColumn("dtMain","CR_MACRO","STRING")
+	F.Data.DataTable.AddColumn("dtMain","PRICE_MATL","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","PRICE_PART","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","PRICE_FINISH","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","PRICE_SF_CALC","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","SQUARE_FT","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","SF_COST","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","TOTAL_COST","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","WEIGHT_MATL","FLOAT")
+	F.Data.DataTable.AddColumn("dtMain","UPLOADED","BOOLEAN")
+	F.Data.DataTable.AddColumn("dtMain","PART","STRING")
+	F.Data.DataTable.AddColumn("dtMain","WO","STRING")
+
+	'ADD A BLANK ROW
+	V.Local.sLine.Set("001")
+	F.Intrinsic.String.Build("select * from V_ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}0'",V.Local.sOrder,V.Local.sLine,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstLine",V.Local.sSQL)
+	F.Intrinsic.Control.DoUntil(V.ODBC.con!rstLine.EOF,=,TRUE)
+		F.ODBC.con!rstLine.Close
+		F.Intrinsic.Math.Add(V.Local.sLine,1,V.Local.sLine)
+		F.Intrinsic.String.LPad(V.Local.sLine,"0",3,V.Local.sLine)
+		F.Intrinsic.String.Build("select * from V_ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}0'",V.Local.sOrder,V.Local.sLine,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstLine",V.Local.sSQL)
+	F.Intrinsic.Control.Loop
+	F.ODBC.con!rstLine.Close
+	F.Data.DataTable.AddRow("dtMain","ORDER_NO",V.Local.sOrder,"LINE",V.Local.sLine,"DATE_PROMISE",V.Global.dDateDue,"UOM","IN","EXPORT",False,"WGRAIN",False,"DISCOUNT",V.Global.fPriceCatDisc,"MANUAL_PRICE",False,"TAXABLE",False,"ATTN_ID",False,"ADD_ROW","+","DELETE_ROW","-","CR_MACRO","Macro")
+
+F.Intrinsic.Control.Else
+	F.Data.DataTable.CreateFromSQL("dtMain","con",V.Local.sSQL,True)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.con!rstSel.Close
+
+'ADD THE BATCH NOTES
+F.Intrinsic.String.Build("select * from GAB_4483_BATCH_NOTES where ORDER_NO = '{0}'",V.Local.sOrder,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+	gui.f_Main.txtBatch.Text(V.ODBC.con!rstSel.FieldValTrim!NOTES)
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstSel.Close
+
+Program.Sub.LoadDataTable.End
+
+Program.Sub.LoadGrid.Start
+V.Local.iFor.Declare
+V.Local.iIndex.Declare
+V.Local.sColor.Declare
+V.Local.sMCCode.Declare
+V.Local.sProperty.Declare
+V.Local.sSQL.Declare
+
+F.Data.DataView.Create("dtMain","dvMain")
+
+GUI.f_Main.GsGcMain.AddGridviewFromDataview("gvMAIN","dtMain","dvMain")
+GUI.f_Main.GsGcMain.MainView("gvMAIN")
+
+GUI.f_Main.GsGcMain.SetGridviewProperty("gvMAIN","AllowAddRows",False)
+GUI.f_Main.GsGcMain.SetGridviewProperty("gvMAIN","AllowDeleteRows",False)
+GUI.f_Main.GsGcMain.SetGridviewProperty("gvMAIN","Editable",True)
+
+'ALLOW EDIT
+V.Local.sProperty.Set("AllowEdit")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,False)
+
+
+'READ ONLY
+V.Local.sProperty.Set("ReadOnly")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,True)
+
+'HEADER FONT BOLD
+V.Local.sProperty.Set("HeaderFontBold")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,True)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,True)
+
+'HEADER BACK COLOR
+V.Local.sProperty.Set("HeaderBackColor")
+V.Local.sColor.Set("MediumSeaGreen")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,V.Local.sColor)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,V.Local.sColor)
+
+'VISIBLE INDEX
+V.Local.sProperty.Set("VisibleIndex")
+V.Local.iIndex.Set(0)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,V.Local.iIndex)
+V.Local.iIndex.Set(V.Local.iIndex.++)
+
+
+'TAB STOP
+V.Local.sProperty.Set("TabStop")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,False)
+'GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,False)
+
+'CAPTION
+V.Local.sProperty.Set("Caption")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,"Line")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,"Promise Date")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,"Material")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,"Part Code")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,"Order Qty.")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,"Length")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,"Width")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,"UOM")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,"Description")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,"Export")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,"Finish")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,"Woodgrain")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,"Price/SF")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,"Cost")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,"Discount")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,"Extension")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,"Manual Price")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,"Taxable")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,"Drill Code")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,"Drill Price")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,"Notes")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,"MC Code")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,"Attention ID")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty," ")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty," ")
+
+'MIN WIDTH
+V.Local.sProperty.Set("MinWidth")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,"40")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,"90")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL",V.Local.sProperty,"150")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART_CODE",V.Local.sProperty,"150")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","QTY_ORDER",V.Local.sProperty,"70")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LENGTH",V.Local.sProperty,"50")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WIDTH",V.Local.sProperty,"50")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UOM",V.Local.sProperty,"40")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DESCRIPTION",V.Local.sProperty,"200")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXPORT",V.Local.sProperty,"50")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FINISH",V.Local.sProperty,"150")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WGRAIN",V.Local.sProperty,"70")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_CODE",V.Local.sProperty,"100")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,"50")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,"70")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MANUAL_PRICE",V.Local.sProperty,"80")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TAXABLE",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NOTES",V.Local.sProperty,"200")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MCCODE",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ATTN_ID",V.Local.sProperty,"80")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,"20")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,"20")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,"50")
+
+'MAX WIDTH
+V.Local.sProperty.Set("MaxWidth")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","LINE",V.Local.sProperty,"40")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE",V.Local.sProperty,"90")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DISCOUNT",V.Local.sProperty,"60")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,"30")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,"20")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,"20")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,"50")
+
+'CELL H ALIGNMENT
+V.Local.sProperty.Set("CellHAlignment")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,"Center")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,"Center")
+
+'CELL FONT BOLD
+V.Local.sProperty.Set("CellFontBold")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,True)
+
+'CELL BACK COLOR
+V.Local.sProperty.Set("CellBackColor")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ADD_ROW",V.Local.sProperty,"Lime")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DELETE_ROW",V.Local.sProperty,"Red")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","CR_MACRO",V.Local.sProperty,"Gray")
+
+'DISPLAY CUSTOM NUMERIC
+V.Local.sProperty.Set("DisplayCustomNumeric")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DRILL_PRICE",V.Local.sProperty,"$0.00")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF",V.Local.sProperty,"$0.00")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","COST",V.Local.sProperty,"$0.00")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","EXTENSION",V.Local.sProperty,"$0.00")
+
+'VISIBLE
+V.Local.sProperty.Set("Visible")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","ORDER_NO",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_MATL",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_PART",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_FINISH",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PRICE_SF_CALC",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","SQUARE_FT",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","SF_COST",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","TOTAL_COST",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WEIGHT_MATL",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","UPLOADED",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PART",V.Local.sProperty,False)
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","WO",V.Local.sProperty,False)
+
+'DATE FORMAT FOR PROMISE DATE
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DATE_PROMISE","DisplayCustomDateTime","d")
+
+'COLUMN EDIT FOR UOM DROP DOWN LIST
+GUI.f_Main.GsGcMain.ColumnEdit("gvMAIN","UOM","DropDownList","IN*!*MM")
+
+'COLUMN EDIT FOR MCCODE DROP DOWN LIST
+'V.Local.sSQL.Set("select MACHINE, WC_DEPT from V_WORKCENTERS where WC_DEPT = 'MACH'")
+'F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+'F.Intrinsic.Control.DoUntil(V.ODBC.con!rstSel.EOF,=,True)
+'	F.Intrinsic.Control.If(V.Local.sMCCode,=,"")
+'		V.Local.sMCCode.Set(V.ODBC.con!rstSel.FieldValTrim!MACHINE)
+'	F.Intrinsic.Control.Else
+'		F.Intrinsic.String.Concat(V.Local.sMCCode,"*!*",V.ODBC.con!rstSel.FieldValTrim!MACHINE,V.Local.sMCCode)
+'	F.Intrinsic.Control.EndIf
+'	F.ODBC.con!rstSel.MoveNext
+'F.Intrinsic.Control.Loop
+'F.ODBC.con!rstSel.Close
+'V.Local.sSQL.Set("select A.WORK_GROUP, B.WC_DEPT from V_WORKGROUP_HEAD A left outer join V_WORKCENTERS B on A.PROTOTYPE_WC = B.MACHINE where B.WC_DEPT = 'MACH'")
+'F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+'F.Intrinsic.Control.DoUntil(V.ODBC.con!rstSel.EOF,=,True)
+'	F.Intrinsic.Control.If(V.Local.sMCCode,=,"")
+'		V.Local.sMCCode.Set(V.ODBC.con!rstSel.FieldValTrim!WORK_GROUP)
+'	F.Intrinsic.Control.Else
+'		F.Intrinsic.String.Concat(V.Local.sMCCode,"*!*",V.ODBC.con!rstSel.FieldValTrim!WORK_GROUP,V.Local.sMCCode)
+'	F.Intrinsic.Control.EndIf
+'	F.ODBC.con!rstSel.MoveNext
+'F.Intrinsic.Control.Loop
+'F.ODBC.con!rstSel.Close
+
+'ADD BROWSER ICONS
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","MATL_BROWSE","Icon","^")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","PC_BROWSE","Icon","^")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","FN_BROWSE","Icon","^")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","DC_BROWSE","Icon","^")
+GUI.f_Main.GsGcMain.SetColumnProperty("gvMAIN","NT_LOOKUP","Icon","^")
+
+GUI.f_Main.GsGcMain.ColumnEdit("gvMAIN","MCCODE","DropDownList",V.Local.sMCCode)
+
+Program.Sub.LoadGrid.End
+
+Program.Sub.SetAnchors.Start
+GUI.f_Main.GsGcMain.Anchor(15)
+GUI.f_Main.frmNotes.Anchor(9)
+GUI.f_Main.cmdWeight.Anchor(9)
+GUI.f_Main.picGSSLogo.Anchor(1)
+GUI.f_Main.cmdSave.Anchor(10)
+Gui.f_Main.cmdFinish.Anchor(10)
+GUI.f_Main.cmdUpload.Anchor(10)
+
+Program.Sub.SetAnchors.End
+
+Program.Sub.f_Main_UnLoad.Start
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.End
+
+Program.Sub.f_Main_UnLoad.End
+
+Program.Sub.AddRow.Start
+V.Local.iIndex.Declare
+V.Local.iRow.Declare
+V.Local.sOrder.Declare
+V.Local.sLine.Declare
+V.Local.sSQL.Declare
+
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+
+V.Local.iRow.Set(V.DataTable.dtMain.rowcount--)
+
+F.Intrinsic.Math.Add(V.DataTable.dtMain(V.Local.iRow).LINE!FieldValTrim,1,V.Local.sLine)
+F.Intrinsic.String.LPad(V.Local.sLine,"0",3,V.Local.sLine)
+F.Intrinsic.String.Build("select * from V_ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}0'",V.Local.sOrder,V.Local.sLine,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstLine",V.Local.sSQL)
+F.Intrinsic.Control.DoUntil(V.ODBC.con!rstLine.EOF,=,TRUE)
+	F.ODBC.con!rstLine.Close
+	F.Intrinsic.Math.Add(V.Local.sLine,1,V.Local.sLine)
+	F.Intrinsic.String.LPad(V.Local.sLine,"0",3,V.Local.sLine)
+	F.Intrinsic.String.Build("select * from V_ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}0'",V.Local.sOrder,V.Local.sLine,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstLine",V.Local.sSQL)
+F.Intrinsic.Control.Loop
+F.ODBC.con!rstLine.Close
+
+'ADD A NEW ROW COPYING MATERIAL AND FINISH
+F.Data.DataTable.AddRow("dtMain","ORDER_NO",V.Local.sOrder,"LINE",V.Local.sLine,"DATE_PROMISE",V.Global.dDateDue,"MATL",V.DataTable.dtMain(V.Args.iRowID).MATL!FieldValTrim,"UOM","IN","EXPORT",V.DataTable.dtMain(V.Args.iRowID).EXPORT!FieldVal,"FINISH",V.DataTable.dtMain(V.Args.iRowID).FINISH!FieldValTrim,"WGRAIN",V.DataTable.dtMain(V.Args.iRowID).WGRAIN!FieldVal,"MCCODE",V.DataTable.dtMain(V.Args.iRowID).MCCODE!FieldValTrim,"DISCOUNT",V.Global.fPriceCatDisc,"MANUAL_PRICE",False,"TAXABLE",False,"ATTN_ID",False,"ADD_ROW","+","DELETE_ROW","-","CR_MACRO","Macro","PRICE_MATL",V.DataTable.dtMain(V.Args.iRowID).PRICE_MATL!FieldValFloat,"PRICE_FINISH",V.DataTable.dtMain(V.Args.iRowID).PRICE_FINISH!FieldValFloat,"WEIGHT_MATL",V.DataTable.dtMain(V.Args.iRowID).WEIGHT_MATL!FieldValFloat)
+GUI.f_Main.GsGcMain.GetColumnIndexByName("gvMain","MATL_BROWSE",V.Local.iIndex)
+GUI.f_Main.GsGcMain.SetCellAppearance("gvMAIN",V.Local.iIndex,V.DataTable.dtMain.ROWCOUNT--,"Icon","^")
+GUI.f_Main.GsGcMain.GetColumnIndexByName("gvMain","PC_BROWSE",V.Local.iIndex)
+GUI.f_Main.GsGcMain.SetCellAppearance("gvMAIN",V.Local.iIndex,V.DataTable.dtMain.ROWCOUNT--,"Icon","^")
+GUI.f_Main.GsGcMain.GetColumnIndexByName("gvMain","FN_BROWSE",V.Local.iIndex)
+GUI.f_Main.GsGcMain.SetCellAppearance("gvMAIN",V.Local.iIndex,V.DataTable.dtMain.ROWCOUNT--,"Icon","^")
+GUI.f_Main.GsGcMain.GetColumnIndexByName("gvMain","DC_BROWSE",V.Local.iIndex)
+GUI.f_Main.GsGcMain.SetCellAppearance("gvMAIN",V.Local.iIndex,V.DataTable.dtMain.ROWCOUNT--,"Icon","^")
+GUI.f_Main.GsGcMain.GetColumnIndexByName("gvMain","NT_LOOKUP",V.Local.iIndex)
+GUI.f_Main.GsGcMain.SetCellAppearance("gvMAIN",V.Local.iIndex,V.DataTable.dtMain.ROWCOUNT--,"Icon","^")
+Program.Sub.AddRow.End
+
+Program.Sub.GsGcMain_RowCellClick.Start
+F.Intrinsic.Control.SelectCase(V.Args.Column)
+	F.Intrinsic.Control.Case("MATL_BROWSE")
+		F.Intrinsic.Control.CallSub(matlbrowser,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("PC_BROWSE")
+		F.Intrinsic.Control.CallSub(partcodebrowser,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("FN_BROWSE")
+		F.Intrinsic.Control.CallSub(finishbrowser,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("DC_BROWSE")
+		F.Intrinsic.Control.CallSub(drillcodebrowser,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("NT_LOOKUP")
+		F.Intrinsic.Control.CallSub(notesbrowser,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("ADD_ROW")
+		F.Intrinsic.Control.CallSub(addrow,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("DELETE_ROW")
+		F.Intrinsic.Control.CallSub(deleterow,"iRowID",V.Args.RowIndex)
+	F.Intrinsic.Control.Case("CR_MACRO")
+		F.Intrinsic.Control.CallSub(Loadf_Macro,"iRowID",V.Args.RowIndex)
+F.Intrinsic.Control.EndSelect
+Program.Sub.GsGcMain_RowCellClick.End
+
+Program.Sub.DeleteRow.Start
+F.Intrinsic.Control.If(V.DataTable.dtMain.rowcount,>,1)
+	F.Data.DataTable.DeleteRow("dtMain",V.Args.iRowID)
+F.Intrinsic.Control.EndIf
+Program.Sub.DeleteRow.End
+
+Program.Sub.MatlBrowser.Start
+V.Local.fPrice.Declare
+V.Local.sRet.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select PART, DESCRIPTION from V_INVENTORY_ALL where CODE_SORT = 'MATERIAL' order by PART")
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+F.Intrinsic.UI.Browser("Material Code","con",V.Local.sSQL,"Material Code*!*Description","30*!*70",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"MATL",V.Local.sRet(0).Trim)
+	'UPDATE THE PRICE PER SF
+	F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.Local.sRet(0).Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_MATL",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"WEIGHT_MATL",V.ODBC.con!rstSel.FieldValFloat!LBS)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.iRowID)
+
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.iRowID).MANUAL_PRICE!FieldVal,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"COST",V.DataTable.dtMain(V.Args.iRowID).TOTAL_COST!FieldValFloat)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_SF",V.DataTable.dtMain(V.Args.iRowID).PRICE_SF_CALC!FieldValFloat)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Args.iRowID)
+
+Program.Sub.MatlBrowser.End
+
+Program.Sub.PartCodeBrowser.Start
+V.Local.bExport.Declare
+V.Local.bWoodGrain.Declare
+V.Local.sRet.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select PART, DESCRIPTION from V_INVENTORY_ALL where CODE_SORT = 'PART' order by PART")
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+F.Intrinsic.UI.Browser("Part Code","con",V.Local.sSQL,"Part Code*!*Description","30*!*70",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PART_CODE",V.Local.sRet(0).Trim)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"DESCRIPTION",V.Local.sRet(1).Trim)
+
+	F.Intrinsic.String.Build("select IF(UPPER(USER2) = 'TRUE',convert('1',SQL_Bit),convert('0',SQL_Bit)) as 'USER2', IF(UPPER(USER3) = 'TRUE',convert('1',SQL_Bit),convert('0',SQL_Bit)) as 'USER3', USER4 from INV_EXTRA where PART = '{0}'",V.Local.sRet(0).Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"WGRAIN",V.ODBC.con!rstSel.FieldValTrim!USER2)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"EXPORT",V.ODBC.con!rstSel.FieldValTrim!USER3)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"MCCODE",V.ODBC.con!rstSel.FieldValTrim!USER4)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.String.Build("select IF(TAX_EXEMPT_FLG = 'Y',convert('0',SQL_BIT),convert('1',SQL_BIT)) as TAXABLE from INVENTORY_MST3 where PART = '{0}'",V.Local.sRet(0).Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"TAXABLE",V.ODBC.con!rstSel.FieldVal!TAXABLE)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.String.Build("select AMT_PRICE from V_INVENTORY_ALL where PART = '{0}'",V.Local.sRet(0).Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_PART",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.iRowID)
+
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.iRowID).MANUAL_PRICE!FieldVal,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"COST",V.DataTable.dtMain(V.Args.iRowID).TOTAL_COST!FieldValFloat)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_SF",V.DataTable.dtMain(V.Args.iRowID).PRICE_SF_CALC!FieldValFloat)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Args.iRowID)
+
+Program.Sub.PartCodeBrowser.End
+
+Program.Sub.FinishBrowser.Start
+V.Local.fPrice.Declare
+V.Local.sRet.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select PART, DESCRIPTION from V_INVENTORY_ALL where CODE_SORT = 'FINISH' order by PART")
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+F.Intrinsic.UI.Browser("Finish Code","con",V.Local.sSQL,"Finish Code*!*Description","30*!*70",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"FINISH",V.Local.sRet(0).Trim)
+	'UPDATE THE PRICE PER SF
+	F.Intrinsic.String.Build("select AMT_PRICE from V_INVENTORY_ALL where PART = '{0}'",V.Local.sRet(0).Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_FINISH",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.iRowID)
+
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.iRowID).MANUAL_PRICE!FieldVal,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"COST",V.DataTable.dtMain(V.Args.iRowID).TOTAL_COST!FieldValFloat)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_SF",V.DataTable.dtMain(V.Args.iRowID).PRICE_SF_CALC!FieldValFloat)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Args.iRowID)
+
+Program.Sub.FinishBrowser.End
+
+Program.Sub.DrillCodeBrowser.Start
+V.Local.fPrice.Declare
+V.Local.sRet.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select PART, DESCRIPTION from V_INVENTORY_ALL where CODE_SORT = 'DRILL' order by PART")
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+F.Intrinsic.UI.Browser("Drill Code","con",V.Local.sSQL,"Drill Code*!*Description","30*!*70",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"DRILL_CODE",V.Local.sRet(0).trim)
+	F.Intrinsic.String.Build("select AMT_PRICE from V_INVENTORY_ALL where PART = '{0}'",V.Local.sRet(0).trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"DRILL_PRICE",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.iRowID)
+
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.iRowID).MANUAL_PRICE!FieldVal,=,False)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"COST",V.DataTable.dtMain(V.Args.iRowID).TOTAL_COST!FieldValFloat)
+		F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"PRICE_SF",V.DataTable.dtMain(V.Args.iRowID).PRICE_SF_CALC!FieldValFloat)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Args.iRowID)
+Program.Sub.DrillCodeBrowser.End
+
+Program.Sub.NotesBrowser.Start
+V.Local.sRet.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select TEXT from V_TEXT_CODES")
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+F.Intrinsic.UI.Browser("Notes","con",V.Local.sSQL,"Notes","100",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Replace(V.Local.sRet,"*!*","",V.Local.sRet)
+	F.Data.DataTable.SetValue("dtMain",V.Args.iRowID,"NOTES",V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+Gui.f_Main.GsGcMain.ResumeLayout
+Program.Sub.NotesBrowser.End
+
+Program.Sub.GsGcMain_CellValueChanged.Start
+V.Local.bPrice.Declare
+V.Local.fLength.Declare
+V.Local.fPrice.Declare
+V.Local.fWidth.Declare
+V.Local.sFinish.Declare
+V.Local.sMatl.Declare
+V.Local.sPart.Declare
+V.Local.sSQL.Declare
+
+V.Local.bPrice.Set(False)
+
+F.Intrinsic.Control.SelectCase(V.Args.Column)
+
+	F.Intrinsic.Control.Case("UOM")
+		V.Local.bPrice.Set(True)
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).LENGTH!FieldValFloat,>,0)
+			F.Intrinsic.Math.Div(V.DataTable.dtMain(V.Args.RowIndex).LENGTH!FieldValFloat,25.4,V.Local.fLength)
+			F.Intrinsic.Math.Round(V.Local.fLength,3,V.Local.fLength)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"LENGTH",V.Local.fLength)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).WIDTH!FieldValFloat,>,0)
+			F.Intrinsic.Math.Div(V.DataTable.dtMain(V.Args.RowIndex).WIDTH!FieldValFloat,25.4,V.Local.fWidth)
+			F.Intrinsic.Math.Round(V.Local.fWidth,3,V.Local.fWidth)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"WIDTH",V.Local.fWidth)
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"UOM","IN")
+
+	F.Intrinsic.Control.Case("PRICE_SF")
+		V.Local.bPrice.Set(True)
+		F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"MANUAL_PRICE",True)
+		F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Args.RowIndex).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Args.RowIndex).WIDTH!FieldValFloat,V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF!FieldValTrim,V.Local.fPrice)
+		F.Intrinsic.Math.Div(V.Local.fPrice,144,V.Local.fPrice)
+		F.Intrinsic.Math.Add(V.Local.fPrice,V.DataTable.dtMain(V.Args.RowIndex).DRILL_PRICE!FieldValFloat,V.Local.fPrice)
+		F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.Local.fPrice)
+
+	F.Intrinsic.Control.Case("COST")
+		V.Local.bPrice.Set(True)
+		F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"MANUAL_PRICE",True)
+
+	F.Intrinsic.Control.Case("PART_CODE")
+		V.Local.bPrice.Set(True)
+		F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}' and CODE_SORT = 'PART'",V.DataTable.dtMain(V.Args.RowIndex).PART_CODE!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+			V.Local.sPart.Set(V.ODBC.con!rstSel.FieldValTrim!PART)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PART_CODE",V.Local.sPart)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"DESCRIPTION",V.ODBC.con!rstSel.FieldValTrim!DESCRIPTION)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_PART",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+			F.ODBC.con!rstSel.Close
+
+			F.Intrinsic.String.Build("select IF(UPPER(USER2) = 'TRUE',convert('1',SQL_Bit),convert('0',SQL_Bit)) as 'USER2', IF(UPPER(USER3) = 'TRUE',convert('1',SQL_Bit),convert('0',SQL_Bit)) as 'USER3', USER4 from INV_EXTRA where PART = '{0}'",V.Local.sPart,V.Local.sSQL)
+			F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+			F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"WGRAIN",V.ODBC.con!rstSel.FieldValTrim!USER2)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"EXPORT",V.ODBC.con!rstSel.FieldValTrim!USER3)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"MCCODE",V.ODBC.con!rstSel.FieldValTrim!USER4)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstSel.Close
+
+			F.Intrinsic.String.Build("select IF(TAX_EXEMPT_FLG = 'Y',convert('0',SQL_BIT),convert('1',SQL_BIT)) as TAXABLE from INVENTORY_MST3 where PART = '{0}'",V.Local.sPart,V.Local.sSQL)
+			F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+			F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"TAXABLE",V.ODBC.con!rstSel.FieldVal!TAXABLE)
+			F.Intrinsic.Control.EndIf
+
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Part Code Does Not Exist","Order Entry")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.Case("FINISH")
+		V.Local.bPrice.Set(True)
+		F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}' and CODE_SORT = 'FINISH'",V.DataTable.dtMain(V.Args.RowIndex).FINISH!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+			V.Local.sFinish.Set(V.ODBC.con!rstSel.FieldValTrim!PART)
+
+			'UPDATE THE PRICE PER SF
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_FINISH",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Finish Code Does Not Exist","Order Entry")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstSel.Close
+
+	F.Intrinsic.Control.Case("DRILL_CODE")
+		V.Local.bPrice.Set(True)
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).DRILL_CODE!FieldValTrim,=,"")
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"DRILL_PRICE",0)
+
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}' and CODE_SOURCE = 'DRILL'",V.DataTable.dtMain(V.Args.RowIndex).DRILL_CODE!FieldValTrim,V.Local.sSQL)
+			F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+			F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"DRILL_PRICE",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.UI.Msgbox("Drill Code Does Not Exist","Order Entry")
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"DRILL_PRICE",0)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstSel.Close
+		F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+		F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.Case("MATL")
+		V.Local.bPrice.Set(True)
+		F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}' and CODE_SORT = 'MATERIAL'",V.DataTable.dtMain(V.Args.RowIndex).MATL!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+			V.Local.sMatl.Set(V.ODBC.con!rstSel.FieldValTrim!PART)
+			'UPDATE THE PRICE PER SF
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_MATL",V.ODBC.con!rstSel.FieldValFloat!AMT_PRICE)
+			F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"WEIGHT_MATL",V.ODBC.con!rstSel.FieldValFloat!LBS)
+
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Material Code Does Not Exist","Order Entry")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstSel.Close
+
+		F.Intrinsic.Control.Case("EXPORT")
+
+		F.Intrinsic.Control.Case("LENGTH")
+			F.Intrinsic.Control.CallSub(validatelength,"iRowID",V.Args.RowIndex)
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+		F.Intrinsic.Control.Case("WIDTH")
+			F.Intrinsic.Control.CallSub(validatewidth,"iRowID",V.Args.RowIndex)
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.CaseElse
+			F.Intrinsic.Control.CallSub(setallcalculations,"iRowID",V.Args.RowIndex)
+
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Args.RowIndex).MANUAL_PRICE!FieldVal,=,False)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"COST",V.DataTable.dtMain(V.Args.RowIndex).TOTAL_COST!FieldValFloat)
+				F.Data.DataTable.SetValue("dtMain",V.Args.RowIndex,"PRICE_SF",V.DataTable.dtMain(V.Args.RowIndex).PRICE_SF_CALC!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.if(V.Local.bPrice,=,True)
+	F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Args.RowIndex)
+F.Intrinsic.Control.EndIf
+
+Program.Sub.GsGcMain_CellValueChanged.End
+
+Program.Sub.SetPrice_SF_Calc.Start
+V.Local.fValue.Declare
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Math.Add(V.DataTable.dtMain(V.Local.iRow).PRICE_MATL!FieldValFloat,V.DataTable.dtMain(V.Local.iRow).PRICE_PART!FieldValFloat,V.DataTable.dtMain(V.Local.iRow).PRICE_FINISH!FieldValFloat,V.Local.fValue)
+F.Intrinsic.Math.Round(V.Local.fValue,2,V.Local.fValue)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"PRICE_SF_CALC",V.Local.fValue)
+
+Program.Sub.SetPrice_SF_Calc.End
+
+Program.Sub.SetSquare_FT.Start
+V.Local.fValue.Declare
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.iRow).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iRow).WIDTH!FieldValFloat,V.Local.fValue)
+F.Intrinsic.Math.Div(V.Local.fValue,144,V.Local.fValue)
+F.Intrinsic.Math.Round(V.Local.fValue,2,V.Local.fValue)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"SQUARE_FT",V.Local.fValue)
+
+Program.Sub.SetSquare_FT.End
+
+Program.Sub.SetSF_Cost.Start
+V.Local.fValue.Declare
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.iRow).SQUARE_FT!FieldValFloat,V.DataTable.dtMain(V.Local.iRow).PRICE_SF_CALC!FieldValFloat,V.Local.fValue)
+F.Intrinsic.Math.Round(V.Local.fValue,2,V.Local.fValue)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"SF_COST",V.Local.fValue)
+
+Program.Sub.SetSF_Cost.End
+
+Program.Sub.SetTotal_Cost.Start
+V.Local.fValue.Declare
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+'Minimum Charge is for 1.5 SF
+F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).SQUARE_FT!FieldValFloat,>,1.5)
+	F.Intrinsic.Math.Add(V.DataTable.dtMain(V.Local.iRow).SF_COST!FieldValFloat,V.DataTable.dtMain(V.Local.iRow).DRILL_PRICE!FieldValFloat,V.Local.fValue)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.iRow).PRICE_SF_CALC!FieldValFloat,1.5,V.Local.fValue)
+	F.Intrinsic.Math.Add(V.Local.fValue,V.DataTable.dtMain(V.Local.iRow).DRILL_PRICE!FieldValFloat,V.Local.fValue)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Math.Round(V.Local.fValue,2,V.Local.fValue)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"TOTAL_COST",V.Local.fValue)
+
+Program.Sub.SetTotal_Cost.End
+
+Program.Sub.SetAllCalculations.Start
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Control.CallSub(setprice_sf_calc,"iRowID",V.Local.iRow)
+F.Intrinsic.Control.CallSub(setsquare_ft,"iRowID",V.Local.iRow)
+F.Intrinsic.Control.CallSub(setsf_cost,"iRowID",V.Local.iRow)
+F.Intrinsic.Control.CallSub(settotal_cost,"iRowID",V.Local.iRow)
+F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).MANUAL_PRICE!FieldVal,=,False)
+	F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"COST",V.DataTable.dtMain(V.Local.iRow).TOTAL_COST!FieldValFloat)
+	F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"PRICE_SF",V.DataTable.dtMain(V.Local.iRow).PRICE_SF_CALC!FieldValFloat)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Local.iRow)
+
+Program.Sub.SetAllCalculations.End
+
+Program.Sub.SetExtension.Start
+V.Local.fCost.Declare
+V.Local.fDiscount.Declare
+V.Local.fValue.Declare
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+F.Intrinsic.Math.Round(V.DataTable.dtMain(V.Local.iRow).COST!FieldValFloat,2,V.Local.fCost)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"COST",V.Local.fCost)
+F.Intrinsic.Math.Sub(1,V.DataTable.dtMain(V.Local.iRow).DISCOUNT!FieldValFloat,V.Local.fDiscount)
+F.Intrinsic.Math.Mult(V.Local.fDiscount,V.Local.fCost,V.Local.fCost)
+F.Intrinsic.Math.Round(V.Local.fCost,2,V.Local.fCost)
+F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.iRow).QTY_ORDER!FieldValFloat,V.Local.fCost,V.Local.fValue)
+F.Data.DataTable.SetValue("dtMain",V.Local.iRow,"EXTENSION",V.Local.fValue)
+
+Gui.f_Main.GsGcMain.ResumeLayout
+
+Program.Sub.SetExtension.End
+
+Program.Sub.Loadf_Macro.Start
+V.Local.iFor.Declare
+V.Local.iRow.Declare
+V.Local.sName.Declare
+V.Local.sSQL.Declare
+V.Local.sValue.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,=,"")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Build("select * from INV_EXTRA where PART = '{0}'",V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,True)
+	F.Intrinsic.UI.Msgbox("No Macros Exist for this Part Code","Order Entry")
+	F.ODBC.con!rstSel.Close
+F.Intrinsic.Control.Else	
+	F.Intrinsic.String.Build("select * from GAB_4483_OE_LN_MACRO where ORDER_NO = '{0}' and RECORD_NO = '{1}'",V.DataTable.dtMain(V.Local.iRow).ORDER_NO!FieldValTrim,V.DataTable.dtMain(V.Local.iRow).LINE!FieldValTrim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstRec",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstRec.EOF,=,True)
+		F.Data.DataTable.Create("MACRO",True)
+		F.Data.DataTable.AddColumn("MACRO","NAME","STRING")
+		F.Data.DataTable.AddColumn("MACRO","VALUE","STRING")
+		F.Data.DataTable.AddColumn("MACRO","ORDER_NO","STRING")
+		F.Data.DataTable.AddColumn("MACRO","RECORD_NO","STRING")
+		F.Intrinsic.Control.For(V.Local.iFor,39,59,1)
+			F.Intrinsic.Control.If(V.ODBC.con!rstSel.FieldValTrim!USER[V.Local.iFor],<>,"")
+				F.Intrinsic.String.Build("select USER{0} from INV_EXTRA_TITLES",V.Local.iFor,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenLocalRecordsetRO("rstTitle",V.Local.sSQL)
+				F.Intrinsic.Control.If(V.ODBC.con!rstTitle.EOF,=,False)
+					V.Local.sName.Set(V.ODBC.con!rstTitle.FieldValTrim!USER[V.Local.iFor])
+					V.Local.sValue.Set(V.ODBC.con!rstSel.FieldValTrim!USER[V.Local.iFor])
+					F.Data.DataTable.AddRow("MACRO","NAME",V.Local.sName,"VALUE",V.Local.sValue,"ORDER_NO",V.DataTable.dtMain(V.Local.iRow).ORDER_NO!FieldValTrim,"RECORD_NO",V.DataTable.dtMain(V.Local.iRow).LINE!FieldValTrim)
+				F.Intrinsic.Control.EndIf
+				F.ODBC.con!rstTitle.Close
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iFor)
+	F.Intrinsic.Control.Else
+		F.Data.DataTable.CreateFromSQL("MACRO","con",V.Local.sSQL,True)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstRec.Close
+	F.ODBC.con!rstSel.Close
+
+	GUI.f_Macro.GsGcMacro.AddGridviewFromDatatable("gvMACRO","MACRO")
+
+	GUI.f_Macro.GsGcMacro.SetGridviewProperty("gvMACRO","Editable",True)
+
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","AllowEdit",False)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","VALUE","AllowEdit",True)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","ReadOnly",True)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","VALUE","ReadOnly",False)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","HeaderFontBold",True)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","VALUE","HeaderFontBold",True)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","HeaderBackColor","MediumSeaGreen")
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","VALUE","HeaderBackColor","MediumSeaGreen")
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","Caption","Name")
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","VALUE","Caption","Value")
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","NAME","TabStop",False)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","ORDER_NO","Visible",False)
+	GUI.f_Macro.GsGcMacro.SetColumnProperty("gvMACRO","RECORD_NO","Visible",False)
+
+	GUI.f_Macro.GsGcMacro.MainView("gvMACRO")
+
+	GUI.f_Macro..Show
+F.Intrinsic.Control.EndIf
+
+Program.Sub.Loadf_Macro.End
+
+Program.Sub.f_Macro_UnLoad.Start
+F.Data.DataTable.DeleteRow("MACRO")
+F.Data.DataTable.Close("MACRO")
+GUI.f_Macro..Visible(False)
+
+Program.Sub.f_Macro_UnLoad.End
+
+Program.Sub.cmdMacroSave_Click.Start
+F.Data.DataTable.SaveToDB("MACRO","con","GAB_4483_OE_LN_MACRO","ORDER_NO*!*RECORD_NO*!*NAME",256)
+
+F.Data.DataTable.DeleteRow("MACRO")
+F.Data.DataTable.Close("MACRO")
+GUI.f_Macro..Visible(False)
+Program.Sub.cmdMacroSave_Click.End
+
+Program.Sub.cmdWeight_Click.Start
+V.Local.fArea.Declare
+V.Local.fLineArea.Declare
+V.Local.fLineWeight.Declare
+V.Local.fWeight.Declare
+V.Local.iFor.Declare
+V.Local.sMessage.Declare
+
+F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtMain.RowCount--,1)
+	F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).SQUARE_FT!FieldValFloat,V.Local.fLineArea)
+	F.Intrinsic.Math.Round(V.Local.fLineArea,2,V.Local.fLineArea)
+	F.Intrinsic.Math.Add(V.Local.fLineArea,V.Local.fArea,V.Local.fArea)
+
+	F.Intrinsic.Math.Mult(V.Local.fLineArea,V.DataTable.dtMain(V.Local.iFor).WEIGHT_MATL!FieldValFloat,V.Local.fLineWeight)
+	F.Intrinsic.Math.Round(V.Local.fLineWeight,2,V.Local.fLineWeight)
+	F.Intrinsic.Math.Add(V.Local.fLineWeight,V.Local.fWeight,V.Local.fWeight)
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+F.Intrinsic.String.Build("Total Order Weight:  {0} pounds{1}Total Order Square Footage:  {2} square feet",V.Local.fWeight,V.Ambient.NewLine,V.Local.fArea,V.Local.sMessage)
+
+F.Intrinsic.UI.Msgbox(V.Local.sMessage,"Order Entry")
+
+
+Program.Sub.cmdWeight_Click.End
+
+Program.Sub.LoadPriceCategory.Start
+V.Local.sSQL.Declare
+
+F.Intrinsic.Control.If(V.Passed.000082.Trim,<>,"")
+	F.Intrinsic.String.Build("select * from V_PRICE_CAT_DISC where KEY_TYPE = 'PC' and PRICE_CATG = '{0}' and PRICING_METHOD = 'PD'",V.Passed.000082,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,FALSE)
+		V.Global.fPriceCatDisc.Set(V.ODBC.con!rstSel.FieldValFloat!PD_DISC_1)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstSel.Close
+F.Intrinsic.Control.EndIf
+Program.Sub.LoadPriceCategory.End
+
+Program.Sub.SetDiscount.Start
+V.Local.iRow.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+Program.Sub.SetDiscount.End
+
+Program.Sub.cmdSave_Click.Start
+F.Data.DataTable.SaveToDB("dtMain","con","GAB_4483_OE_LINES","ORDER_NO*!*LINE",256)
+F.Intrinsic.Control.CallSub(upload_batch_notes)
+f.Intrinsic.UI.Msgbox("Records Saved","Order Entry")
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.cmdFinish_Click.Start
+F.Intrinsic.UI.InvokeWaitDialog("Processing Order Data","Order Entry")
+'TODO
+'F.Intrinsic.Control.CallSub(apply_discounts)
+'Create an inventory batch and upload it
+F.Intrinsic.Control.CallSub(upload_inventory)
+'Create the sales order lines
+F.Intrinsic.Control.CallSub(upload_oe_lines)
+'Create and schedule WO
+F.Intrinsic.Control.CallSub(upload_wo)
+'Save Datatable to the database
+F.Intrinsic.Control.CallSub(cmdsave_click)
+F.Intrinsic.UI.CloseWaitDialog
+
+Program.Sub.cmdFinish_Click.End
+
+Program.Sub.Apply_Discounts.Start
+V.Local.bInstr.Declare
+V.Local.fPrevQty.Declare
+V.Local.fPrice.Declare
+V.Local.fPriceSqFt.Declare
+V.Local.fQty.Declare
+V.Local.fValue.Declare
+V.Local.iFor.Declare
+V.Local.iFor2.Declare
+V.Local.iNextQB.Declare
+V.Local.iID.Declare
+V.Local.sArray.Declare
+V.Local.sLines.Declare
+V.Local.sPartCode.Declare
+V.Local.sRet.Declare
+V.Local.sRet2.Declare
+V.Local.sSel.Declare
+V.Local.sSQL.Declare
+
+'Close dtContract if it exists
+F.Intrinsic.Control.If(V.DataTable.dtContract.Exists,=,True)
+	F.Data.DataTable.DeleteRow("dtContract")
+	F.Data.DataTable.Close("dtContract")
+F.Intrinsic.Control.EndIf
+
+'Close dtDiscount if it exists
+F.Intrinsic.Control.If(V.DataTable.dtDiscount.Exists,=,True)
+	F.Data.DataTable.DeleteRow("dtDiscount")
+	F.Data.DataTable.Close("dtDiscount")
+F.Intrinsic.Control.EndIf
+
+'Close dtJoin if it exists
+F.Intrinsic.Control.If(V.DataTable.dtJoin.Exists,=,True)
+	F.Data.DataTable.DeleteRow("dtJoin")
+	F.Data.DataTable.Close("dtJoin")
+F.Intrinsic.Control.EndIf
+
+'Check to see if the customer and ship ID has any contract price discounts
+F.Intrinsic.String.Build("select A.CUSTOMER, A.SHIPID, A.CONTRACT, A.PART, B.USER1, B.USER2, A.QB_QTY_1, A.QB_QTY_2, A.QB_QTY_3, A.QB_QTY_4, A.QB_QTY_5, A.QB_QTY_6, A.QB_QTY_7, A.QB_QTY_8, A.QB_QTY_9, A.QB_QTY_10, A.PRICE_1, A.PRICE_2, A.PRICE_3, A.PRICE_4, A.PRICE_5, A.PRICE_6, A.PRICE_7, A.PRICE_8, A.PRICE_9, A.PRICE_10 FROM V_OE_K_P_BREAK A LEFT OUTER JOIN V_CONTRACT_LINES B ON A.CUSTOMER = B.CUSTOMER and A.SHIPID = B.SHIP_ID and A.PART = B.PART where A.CUSTOMER = '{0}' and A.SHIPID = '{1}'",V.Passed.000006,V.Passed.000061,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstContract",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstContract.EOF,=,False)
+	'We got here so they must have contracts
+	'Create a data table for the contracts using the SQL statement
+	F.Data.DataTable.CreateFromSQL("dtContract","con",V.Local.sSQL,True)
+	'Add an Discount ID column
+	F.Data.DataTable.AddColumn("dtContract","ID","Long")
+	F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtContract.RowCount--,1)
+		F.Data.DataTable.SetValue("dtContract",V.Local.iFor,"ID",V.Local.iFor)
+	F.Intrinsic.Control.Next(V.Local.iFor)
+	'Create dtDiscount
+	F.Data.DataTable.Create("dtDiscount",True)
+	F.Data.DataTable.AddColumn("dtDiscount","ID","Long")
+	F.Data.DataTable.AddColumn("dtDiscount","QTY","Float")
+	F.Data.DataTable.AddColumn("dtDiscount","LINES","String")
+	F.Data.DataTable.AddColumn("dtDiscount","PRICESQFT","Float")
+	'Loop through dtMain and build dtDiscount using the line data
+	F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtMain.RowCount--,1)
+		'See if the line matches anything in dtContract
+		F.Intrinsic.String.Left(V.DataTable.dtMain(V.Local.iFor).PART_CODE!FieldValTrim,8,V.Local.sPartCode)
+		F.Intrinsic.String.Build("PART = '{0}' and USER1 = '{1}' and USER2 = '{2}'",V.DataTable.dtMain(V.Local.iFor).FINISH!FieldValTrim,V.DataTable.dtMain(V.Local.iFor).MATL!FieldValTrim,V.Local.sPartCode,V.Local.sSel)
+		F.Data.DataTable.Select("dtContract",V.Local.sSel,V.Local.sRet)
+		F.Intrinsic.Control.If(V.Local.sRet,<>,"***NORETURN***")
+			'The line matches so we need to add the line to dtDiscount or update one if it exists
+			F.Intrinsic.String.Build("ID = '{0}'",V.DataTable.dtContract(V.Local.sRet).ID!FieldVal,V.Local.sSel)
+			F.Data.DataTable.Select("dtDiscount",V.Local.sSel,V.Local.sRet2)
+			F.Intrinsic.Control.If(V.Local.sRet2,=,"***NORETURN***")
+				'No record exists so add it
+				F.Data.DataTable.AddRow("dtDiscount","ID",V.DataTable.dtContract(V.Local.sRet).ID!FieldVal,"QTY",V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValFloat,"LINES",V.DataTable.dtMain(V.Local.iFor).Line!FieldValTrim)
+			F.Intrinsic.Control.Else
+				'Record exists so update it
+				'Add the quantity
+				F.Intrinsic.Math.Add(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValFloat,V.DataTable.dtDiscount(V.Local.sRet2).QTY!FieldValFloat,V.Local.fQty)
+				'Add the line to the string
+				F.Intrinsic.String.Concat(V.DataTable.dtDiscount(V.Local.sRet2).LINES!FieldValTrim,"*!*",V.Local.sLines)
+				F.Data.DataTable.SetValue("dtDiscount",V.Local.sRet2,"QTY",V.Local.fQty,"LINES",V.Local.sLines)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iFor)
+
+	F.Intrinsic.Control.If(V.DataTable.dtDiscount.RowCount,>,0)
+		'Discounts apply to the order
+		'Join the data tables
+		F.Data.Linq.Join("LeftJoin","DataTable","dtDiscount*!*D","DataTable","dtContract*!*C","D.ID=C.ID","D.ID*!*C.CONTRACT*!*C.CUSTOMER*!*C.SHIPID*!*D.QTY*!*D.LINES*!*D.PRICESQFT*!*C.PART*!*C.USER1*!*C.USER2","","","","dtJoin",True)
+		'Loop through dtDiscount and calculate the new sf price
+		F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtJoin.RowCount--,1)
+			F.Intrinsic.String.Build("ID = '{0}'",V.DataTable.dtJoin(V.Local.iFor).ID!FieldVal,V.Local.sSel)
+			F.Data.DataTable.Select("dtContract",V.Local.sSel,V.Local.sRet)
+			'Build the query for the pricing by finding the highest QB_QTY field populated
+			F.Intrinsic.String.Build("select (case when QB_QTY_10 > 0 then '10' when QB_QTY_9 > 0 then '9' when QB_QTY_8 > 0 then '8' when QB_QTY_7 > 0 then '7' when QB_QTY_6 > 0 then '6' when QB_QTY_5 > 0 then '5' when QB_QTY_4 > 0 then '4' when QB_QTY_3 > 0 then '3' when QB_QTY_2 > 0 then '2' when QB_QTY_1 > 0 then '1' else '-1' end) as MAX_QTY from V_OE_K_P_BREAK where CONTRACT = '{0}' and PART = '{1}' and CUSTOMER = '{2}' and SHIPID = '{3}'",V.DataTable.dtJoin(V.Local.iFor).CONTRACT!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).PART!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).CUSTOMER!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).SHIPID!FieldValTrim,V.Local.sSQL)
+			F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+			F.Intrinsic.Control.If(V.ODBC.con!rstSel.FieldVal!MAX_QTY,>,0)
+				F.Intrinsic.String.Build("select (case when QB_QTY_1 > '{0}' then '0'",V.DataTable.dtJoin(V.Local.iFor).QTY!FieldValFloat,V.Local.sSQL)
+				F.Intrinsic.Control.For(V.Local.iFor2,1,V.ODBC.con!rstSel.FieldVal!MAX_QTY,1)
+					F.Intrinsic.Math.Add(V.Local.iFor2,1,V.Local.iNextQB)
+					F.Intrinsic.String.Build("{0} when '{1}' between QB_QTY_{2} and QB_QTY_{3} then PRICE_{2}",V.Local.sSQL,V.DataTable.dtJoin(V.Local.iFor).QTY!FieldValFloat,V.Local.iFor2,V.Local.iNextQB,V.Local.sSQL)
+				F.Intrinsic.Control.Next(V.Local.iFor2)
+				F.Intrinsic.String.Build("{0} else '0' end) as PRICING from V_OE_K_P_BREAK where CONTRACT = '{1}' and PART = '{2}' and CUSTOMER = '{3}' and SHIPID = '{4}'",V.Local.sSQL,V.DataTable.dtJoin(V.Local.iFor).CONTRACT!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).PART!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).CUSTOMER!FieldValTrim,V.DataTable.dtJoin(V.Local.iFor).SHIPID!FieldValTrim,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPricing",V.Local.sSQL)
+				F.Data.DataTable.SetValue("dtJoin",V.Local.iFor,"PRICESQFT",V.ODBC.con!rstPricing.FieldValFloat!PRICING)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstSel.Close
+		F.Intrinsic.Control.Next(V.Local.iFor)
+
+		'Loop through dtJoin again and apply the discounts to dtMain
+		F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtJoin.RowCount--,1)
+			'Redim the Array to 0,0
+			V.Local.sArray.Redim(0,0)
+			'See if the price is greater than zero
+			F.Intrinsic.Control.If(V.DataTable.dtJoin(V.Local.iFor).PRICESQFT!FieldValFloat,>,0)
+				'See if there are any lines
+				F.Intrinsic.String.IsInString(V.DataTable.dtJoin(V.Local.iFor).LINES!FieldValTrim,"*!*",True,V.Local.bInstr)
+				F.Intrinsic.Control.If(V.Local.bInstr,<>,True)
+				F.Intrinsic.Control.AndIf(V.DataTable.dtJoin(V.Local.iFor).LINES!FieldValTrim,<>,"")
+					'Theres only one line
+					F.Intrinsic.String.Build("LINE = '{0}'",V.DataTable.dtJoin(V.Local.iFor).LINES!FieldValTrim,V.Local.sSel)
+					F.Data.DataTable.Select("dtMain",V.Local.sSel,V.Local.sRet)
+					F.Intrinsic.Control.If(V.Local.sRet,<>,"***NORETURN***")
+						F.Data.DataTable.SetValue("dtMain",V.Local.sRet,"DISCOUNT",0,"PRICE_SF",V.DataTable.dtJoin(V.Local.iFor).PRICESQFT!FieldValFloat,"MANUAL_PRICE",True)
+						'Recalculate the cost and extension including the drill price
+						F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.sRet).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.sRet).WIDTH!FieldValFloat,V.DataTable.dtMain(V.Local.sRet).PRICE_SF!FieldValTrim,V.Local.fPrice)
+						F.Intrinsic.Math.Div(V.Local.fPrice,144,V.Local.fPrice)
+						F.Intrinsic.Math.Add(V.Local.fPrice,V.DataTable.dtMain(V.Local.sRet).DRILL_PRICE!FieldValFloat,V.Local.fPrice)
+						F.Data.DataTable.SetValue("dtMain",V.Local.sRet,"COST",V.Local.fPrice)
+						F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Local.sRet)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.ElseIf(V.Local.bInstr,=,True)
+					'There are lines so split the string
+					F.Intrinsic.String.Split(V.DataTable.dtJoin(V.Local.iFor).LINES!FieldValTrim,"*!*",V.Local.sArray)
+					'Loop through the lines and apply the square foot price
+					F.Intrinsic.Control.For(V.Local.iFor2,0,V.Local.sArray.UBound,1)
+						'Look up the line number and get the row number from dtMain
+						F.Intrinsic.String.Build("LINE = '{0}'",V.Local.sArray(V.Local.iFor2),V.Local.sSel)
+						F.Data.DataTable.Select("dtMain",V.Local.sSel,V.Local.sRet)
+						F.Intrinsic.Control.If(V.Local.sRet,<>,"***NORETURN***")
+							F.Data.DataTable.SetValue("dtMain",V.Local.sRet,"DISCOUNT",0,"PRICE_SF",V.DataTable.dtJoin(V.Local.iFor).PRICESQFT!FieldValFloat,"MANUAL_PRICE",True)
+							'Recalculate the cost and extension including the drill price
+							F.Intrinsic.Math.Mult(V.DataTable.dtMain(V.Local.sRet).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.sRet).WIDTH!FieldValFloat,V.DataTable.dtMain(V.Local.sRet).PRICE_SF!FieldValTrim,V.Local.fPrice)
+							F.Intrinsic.Math.Div(V.Local.fPrice,144,V.Local.fPrice)
+							F.Intrinsic.Math.Add(V.Local.fPrice,V.DataTable.dtMain(V.Local.sRet).DRILL_PRICE!FieldValFloat,V.Local.fPrice)
+							F.Data.DataTable.SetValue("dtMain",V.Local.sRet,"COST",V.Local.fPrice)
+							F.Intrinsic.Control.CallSub(setextension,"iRowID",V.Local.sRet)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.Next(V.Local.iFor2)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iFor)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.ODBC.con!rstContract.Close
+
+'Close dtContract
+F.Data.DataTable.DeleteRow("dtContract")
+F.Data.DataTable.Close("dtContract")
+
+'Close dtDiscount
+F.Data.DataTable.DeleteRow("dtDiscount")
+F.Data.DataTable.Close("dtDiscount")
+
+'Close dtJoin
+F.Data.DataTable.DeleteRow("dtJoin")
+F.Data.DataTable.Close("dtJoin")
+
+Program.Sub.Apply_Discounts.End
+
+Program.Sub.Upload_Inventory.Start
+V.Local.iFor.Declare
+V.Local.iSuffix.Declare
+V.Local.sDescription.Declare
+V.Local.sFrag.Declare
+V.Local.sPart.Declare
+V.Local.sPL.Declare
+V.Local.sSQL.Declare
+
+V.Local.sSQL.Set("select * from OP_HEADER where ID = '400460'")
+
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+
+F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,True)
+	F.ODBC.con!rstSel.Close
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.DoUntil(V.ODBC.con!rstSel.EOF,=,True)
+		F.Intrinsic.Control.If(V.ODBC.con!rstSel.FieldValTrim!SEQUENCE,=,"0001")
+			V.Local.sFrag.Set(V.ODBC.con!rstSel.FieldValTrim!TEXT1)
+		F.Intrinsic.Control.ElseIf(V.ODBC.con!rstSel.FieldValTrim!SEQUENCE,=,"0002")
+			V.Local.iSuffix.Set(V.ODBC.con!rstSel.FieldValFloat!F_LONG)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstSel.MoveNext
+	F.Intrinsic.Control.Loop
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstSel.Close
+
+F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtMain.RowCount--,1)
+	F.Intrinsic.UI.ChangeWaitStatus("Uploading Inventory",V.Local.iFor,0,V.DataTable.dtMain.RowCount--)
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).PART!FieldValTrim,=,"")
+		F.Intrinsic.String.Concat(V.Local.sFrag,V.Local.iSuffix,V.Local.sPart)
+		F.Intrinsic.Math.Add(V.Local.iSuffix,1,v.Local.iSuffix)
+		F.Intrinsic.String.Build("update OP_HEADER set F_LONG = '{0}' where ID = '400460' and SEQUENCE = '0002'",V.Local.iSuffix,V.Local.sSQL)
+		F.ODBC.Connection!con.Execute(V.Local.sSQL)
+		F.Intrinsic.String.Build("{1} X {0}",V.DataTable.dtMain(V.Local.iFor).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).WIDTH!FieldValFloat,V.Local.sDescription)
+		'PRODUCT LINE
+		F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).PART_CODE!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPL",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstPL.EOF,=,False)
+			V.Local.sPL.Set(V.ODBC.con!rstPL.FieldValTrim!PRODUCT_LINE)
+		F.Intrinsic.Control.Else
+			V.Local.sPL.Set("FG")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstPL.Close
+		F.Global.Inventory.AddPartToBatch(V.Local.sPart,"EA",V.Local.sDescription,"",V.Local.sPL,"M","","",V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat,"UPLOADED")
+		F.Data.DataTable.SetValue("dtMain",V.Local.iFor,"PART",V.Local.sPart)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+F.Global.Inventory.PostPartBatch
+
+Program.Sub.Upload_Inventory.End
+
+Program.Sub.Upload_OE_Lines.Start
+V.Local.bExists.Declare
+V.Local.fBO.Declare
+V.Local.fPrice.Declare
+V.Local.iFor.Declare
+V.Local.sCustomer.Declare
+V.Local.sDateOrder.Declare
+V.Local.sDatePromise.Declare
+V.Local.sDescription.Declare
+V.Local.sExempt.Declare
+V.Local.sExtended.Declare
+V.Local.sFile.Declare
+V.Local.sGL.Declare
+V.Local.sPL.Declare
+V.Local.sOrder.Declare
+V.Local.sQty.Declare
+V.Local.sParameters.Declare
+V.Local.sPrice.Declare
+V.Local.sRecord.Declare
+V.Local.sShipID.Declare
+V.Local.sSQL.Declare
+V.Local.sUpload.Declare
+
+
+'SALES ORDER
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+'CUSTOMER
+F.Intrinsic.String.RPad(V.Passed.000006," ",6,V.Local.sCustomer)
+
+'ORDER DATE
+V.Local.sDateOrder.Set(V.Passed.000023)
+'SHIP TO ID
+F.Intrinsic.String.RPad(V.Passed.000061," ",6,V.Local.sShipID)
+'EXEMPT FLAG (E/T)
+F.Intrinsic.String.Build("select (SELECT CASE WHEN TAX_SALES_EX_NO = '' THEN 'T' ELSE 'E' END) AS EXEMPTION from CUSTOMER_TAX where CUST = '{0}'",V.Local.sCustomer,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstTax",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstTax.EOF,=,FALSE)
+	V.Local.sExempt.Set(V.ODBC.con!rstTax.FieldValTrim!EXEMPTION)
+F.Intrinsic.Control.Else
+	V.Local.sExempt.Set("T")
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstTax.Close
+
+F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtMain.Rowcount--,1)
+	F.Intrinsic.UI.ChangeWaitStatus("Uploading Sales Order Lines",V.Local.iFor,0,V.DataTable.dtMain.RowCount--)
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).UPLOADED!FieldVal,<>,True)
+		' Order No		1-7		7
+		' Line No		8-10	3
+		' Rec Type		11-11	1	L
+		' Customer No	12-17	6
+		' Ship ID		18-23	6
+		F.Intrinsic.String.Concat(V.Local.sOrder,V.DataTable.dtMain(V.Local.iFor).LINE!FieldValTrim,"L",V.Local.sCustomer,v.Local.sShipID,V.Local.sRecord)
+		' Filler		24-29	18
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",29,V.Local.sRecord)
+		' Type			30		1	S
+		' Order Qty		31-46	16	9.4
+		' Shipped Qty	47-62	16	9.4 blank
+		' BO Qty		63-78	16	9.4
+		F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValTrim,"000000000.0000",V.Local.sQty)
+		F.Intrinsic.String.RPad(V.Local.sQty," ",16,V.Local.sQty)
+		F.Intrinsic.String.Concat(V.Local.sRecord,"S",V.Local.sQty,"000000000.0000  ",V.Local.sQty,V.Local.sRecord)
+		' Weight		79-94	16	7.3
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",94,V.Local.sRecord)
+		' UOM			95-96	2	EA
+		' Part NO		97-116	20
+		F.Intrinsic.String.Concat(V.Local.sRecord,"EA",V.DataTable.dtMain(V.Local.iFor).PART!FieldValTrim,V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",116,V.Local.sRecord)
+		' Price			117-132	16	8.5
+		' Cost			133-148	16	8.4
+		' Ship Date		149-154	6	MMDDYY
+		' Sort Code		155-166	12
+		' Calculate Price if there is a discount
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).DISCOUNT!FieldValFloat,>,0)
+			F.Intrinsic.Math.Sub(1,V.DataTable.dtMain(V.Local.iFor).DISCOUNT!FieldValFloat,V.Local.fPrice)
+			F.Intrinsic.Math.Mult(V.Local.fPrice,V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat,V.Local.fPrice)
+			F.Intrinsic.Math.Round(v.Local.fPrice,2,V.Local.fPrice)
+		F.Intrinsic.Control.Else
+			V.Local.fPrice.Set(V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.String.Format(V.Local.fPrice,"00000000.00000",V.Local.sPrice)
+		F.Intrinsic.String.RPad(V.Local.sPrice," ",16,V.Local.sPrice)
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sPrice,"00000000.0000   ",V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",166,V.Local.sRecord)
+		' Part Desc		167-196	30
+		' UF1			197-226	30
+		' UF2			227-256	30
+		' UF3			257-286	30
+		' UF4			287-316	30
+		' UF5			317-346	30
+		' Loc			347-348	2
+		F.Intrinsic.String.Build("{1} X {0}",V.DataTable.dtMain(V.Local.iFor).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).WIDTH!FieldValFloat,V.Local.sDescription)
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sDescription,V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",348,V.Local.sRecord)
+		' Order Disc %	349-364	16	1.4
+		' Uses Ship Sch	365-365	1	N
+		' PC Disc %		366-381	16	1.4
+		' Com Rate Typ	382-386	5
+		F.Intrinsic.String.Concat(V.Local.sRecord,"0.0000          ","N","0.0000          ",V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",386,V.Local.sRecord)
+		' Normal GL		387-401	15
+		' Filler		402-477	76
+		F.Intrinsic.String.Build("select A.PRODUCT_LINE, B.SALES_ACCOUNT from V_INVENTORY_ALL A left outer join V_PRODUCT_LINE B on A.PRODUCT_LINE = B.PRODUCT_LINE where A.PART = '{0}'",V.DataTable.dtMain.PART_CODE(V.Local.iFor)!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPL",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstPL.EOF,=,False)
+			V.Local.sGL.Set(V.ODBC.con!rstPL.FieldValTrim!SALES_ACCOUNT)
+			F.Intrinsic.String.RPad(V.Local.sGL," ",15,V.Local.sGL)
+			V.Local.sPL.Set(V.ODBC.con!rstPL.FieldValTrim!PRODUCT_LINE)
+		F.Intrinsic.Control.Else
+			V.Local.sGL.Set("000000000000000")
+			V.Local.sPL.Set("RM")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstPL.Close
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sGL,V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",477,V.Local.sRecord)
+		' Order Date	478-485	8	CCYYMMDD
+		' Promise Date	486-491	6	MMDDYY
+		F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,"MMDDYY",V.Local.sDatePromise)
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sDateOrder,V.Local.sDatePromise,V.Local.sRecord)
+		' Tax Status	492-492	1	E/T
+		' Cust PN		493-524	32
+		' Info 1		525-544	20
+		' Info 2		545-564	20
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sExempt,V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",564,V.Local.sRecord)
+		' Currency		565-567	3	USD
+		' Extended Amt	568-583	16	14.2
+		' BOM Switch	584-584	1	N
+		' BOM Parent	585-588	4
+		F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).EXTENSION!FieldValTrim,"0000000000000.00",V.Local.sExtended)
+		F.Intrinsic.String.Concat(V.Local.sRecord,"USD",V.Local.sExtended,"N",V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",588,V.Local.sRecord)
+		' Product Line	589-590	2
+		' Filler		591-591	1
+		' PL Disc Amt	592-607	16	9.4
+		' Disc Amt		608-623	16	10.2
+		' Disc Price	624-639	16	10.6
+		' Ord Disc Amt	640-655	16	10.2
+		' PrCl Disc Amt	656-671	16	10.2
+		' PL Disc Amt	672-687	16	10.2
+		' Filler		688-847	160
+		F.Intrinsic.String.Concat(V.Local.sRecord,V.Local.sPL,V.Local.sRecord)
+		F.Intrinsic.String.RPad(V.Local.sRecord," ",847,V.Local.sRecord)
+
+		'ADD THE RECORD TO THE OUTPUT STRING
+		F.Intrinsic.Control.If(V.Local.sUpload.Trim,=,"")
+			V.Local.sUpload.Set(V.Local.sRecord)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat(V.Local.sUpload,V.Ambient.NewLine,V.Local.sRecord,V.Local.sUpload)
+		F.Intrinsic.Control.EndIf
+
+		F.Data.DataTable.SetValue("dtMain",V.Local.iFor,"UPLOADED",True)
+
+	F.Intrinsic.Control.Else
+		'SO LINE EXISTS SO UPDATE THE EXISTING LINE
+		F.Intrinsic.String.Build("select * from ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}0' and RECORD_TYPE = 'L'",V.Local.sOrder.Trim,V.DataTable.dtMain(V.Local.iFor).LINE!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRW("rstLine",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstLine.EOF,=,False)
+			F.Intrinsic.String.Build("{1} X {0}",V.DataTable.dtMain(V.Local.iFor).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).WIDTH!FieldValFloat,V.Local.sDescription)
+			F.ODBC.con!rstLine.Set!Description(V.Local.sDescription)
+			F.Intrinsic.Math.Sub(V.ODBC.con!rstLine.FieldValFloat!QTY_ORDERED,V.ODBC.con!rstLine.FieldValFloat!QTY_BO,V.Local.fBO)
+			F.Intrinsic.Math.Sub(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValFloat,V.Local.fBO,V.Local.fBO)
+			F.ODBC.con!rstLine.Set!QTY_ORDERED(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldValFloat)
+			F.ODBC.con!rstLine.Set!QTY_BO(V.Local.fBO)
+			F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).DISCOUNT!FieldValFloat,>,0)
+				F.Intrinsic.Math.Sub(1,V.DataTable.dtMain(V.Local.iFor).DISCOUNT!FieldValFloat,V.Local.fPrice)
+				F.Intrinsic.Math.Mult(V.Local.fPrice,V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat,V.Local.fPrice)
+				F.Intrinsic.Math.Round(v.Local.fPrice,2,V.Local.fPrice)
+			F.Intrinsic.Control.Else
+				V.Local.fPrice.Set(V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstLine.Set!PRICE(V.Local.fPrice)
+			F.ODBC.con!rstLine.Set!PRICE_ORDER(V.Local.fPrice)
+			F.ODBC.con!rstLine.Set!PRICE_DISC_ORD(V.Local.fPrice)
+			F.ODBC.con!rstLine.Set!EXTENSION(V.DataTable.dtMain(V.Local.iFor).EXTENSION!FieldValFloat)
+			F.ODBC.con!rstLine.Set!EXTENSION_ORDER(V.DataTable.dtMain(V.Local.iFor).EXTENSION!FieldValFloat)
+			F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,"MMDDYY",V.Local.sDatePromise)
+			F.ODBC.con!rstLine.Set!ITEM_PROMISE_DT(V.Local.sDatePromise)
+			F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,"YYYYMMDD",V.Local.sDatePromise)
+			F.ODBC.con!rstLine.Set!DATE_ITEM_PROM(V.Local.sDatePromise)
+			F.ODBC.con!rstLine.Update
+		F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstLine.Close
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+'UPLOAD THE FILE IF THERE ARE RECORDS TO UPLOAD
+F.Intrinsic.Control.If(V.Local.sUpload.Trim,<>,"")
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\SALESHDR.TXT",V.Local.sFile)
+	F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,True)
+		F.Intrinsic.File.DeleteFile(V.Local.sFile)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sUpload)
+	F.Intrinsic.String.Concat("UPLSALES/C!*!",V.Caller.CompanyCode,V.Local.sParameters)
+	F.Global.General.CallWrapperSync(50,V.Local.sParameters)
+F.Intrinsic.Control.EndIf
+
+Program.Sub.Upload_OE_Lines.End
+
+Program.Sub.Upload_WO.Start
+V.Local.bDrill.Declare
+V.Local.bInstr.Declare
+V.Local.dDueDate.Declare
+V.Local.fUnitQty.Declare
+V.Local.iFor.Declare
+V.Local.iLen.Declare
+V.Local.iWO.Declare
+V.Local.sCustomer.Declare
+V.Local.sDescription.Declare
+V.Local.sDueDate.Declare
+V.Local.sFile.Declare
+V.Local.sJCM.Declare
+V.Local.sJCOM.Declare
+V.Local.sLine.Declare
+V.Local.sMMDDYY.Declare
+V.Local.sOpCode.Declare
+V.Local.sOrder.Declare
+V.Local.sOrderLine.Declare
+V.Local.sParameters.Declare
+V.Local.sPart.Declare
+V.Local.sPL.Declare
+V.Local.sPO.Declare
+V.Local.sPrice.Declare
+V.Local.sQTY.Declare
+V.Local.sRate.Declare
+V.Local.sRouter.Declare
+V.Local.sSeq.Declare
+V.Local.sSetup.Declare
+V.Local.sSQL.Declare
+V.Local.sUnitQty.Declare
+V.Local.sUOM.Declare
+V.Local.sWO.Declare
+
+'CUSTOMER
+F.Intrinsic.String.RPad(V.Passed.000006," ",6,V.Local.sCustomer)
+'PO
+F.Intrinsic.String.RPad(V.Passed.000025," ",20,V.Local.sPO)
+'DATE
+F.Intrinsic.String.Format(V.Ambient.Date,"MMDDYY",V.Local.sMMDDYY)
+'SALES ORDER
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+
+'Loop through dtMain
+F.Intrinsic.Control.For(V.Local.iFor,0,V.DataTable.dtMain.RowCount--,1)
+	F.Intrinsic.UI.ChangeWaitStatus("Uploading Work Orders",V.Local.iFor,0,V.DataTable.dtMain.RowCount--)
+	'Check to see that a WO hasn't already been created
+	F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).WO!FieldValTrim,=,"")
+		'If no WO then Check for router on the part code inventory extra User1
+		F.Intrinsic.String.Build("select * from INV_EXTRA where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).PART_CODE!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Intrinsic.Control.AndIf(V.ODBC.con!rstSel.FieldValTrim!USER1,<>,"")
+			V.Local.sRouter.Set(V.ODBC.con!rstSel.FieldValTrim!USER1)
+			'If a router is there check to see that the router exists in the router master
+			F.Intrinsic.String.Build("select OPERATION, LMO, DESC_RT_LINE, UM_INVENTORY, PART_WC_OUTSIDE, ROUTER, LINE_ROUTER, SET_UP, ({0}*RUN_TIME) AS UNIT_QTY, RATE from V_ROUTER_LINE where ROUTER = '{1}' order by LINE_ROUTER",V.DataTable.dtMain(V.Local.iFor).SQUARE_FT!FieldValFloat,V.Local.sRouter,V.Local.sSQL)
+			F.ODBC.Connection!con.OpenLocalRecordsetRO("rstRTR",V.Local.sSQL)
+			F.Intrinsic.Control.If(V.ODBC.con!rstRTR.EOF,=,False)
+				'Get the starting WO number
+				V.Local.sSQL.Set("select * from OP_HEADER where ID = '401112' and SEQUENCE = '0001'")
+				F.ODBC.Connection!con.OpenLocalRecordsetRW("rstWO",V.Local.sSQL)
+				V.Local.iWO.Set(V.ODBC.con!rstWO.FieldValLong!F_LONG)
+				F.Intrinsic.String.Format(V.Local.iWO,"000000",V.Local.sWO)
+				'Load the Work Order Header data to the Job Cost Master Upload Variable
+				'Job		1-6
+				V.Local.sJCM.Set(V.Local.sWO)
+				'Suffix		7-9
+				F.Intrinsic.String.RPad(V.Local.sJCM," ",9,V.Local.sJCM)
+				'Part		10-29
+				'Loc		30-31
+				'Router		32-51
+				'WO Desc	52-81
+				'Customer #	82-87
+				'PO#		88-107
+				'Run Qty	108-123	8.4
+				'Date open	124-129 MMDDYY
+				'Date Due	130-135 MMDDYY
+				F.Intrinsic.String.RPad(V.DataTable.dtMain(V.Local.iFor).PART!FieldValTrim," ",20,V.Local.sPart)
+				F.Intrinsic.String.RPad(V.Local.sRouter," ",20,V.Local.sRouter)
+				F.Intrinsic.String.Build("{1} X {0}",V.DataTable.dtMain(V.Local.iFor).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).WIDTH!FieldValFloat,V.Local.sDescription)
+				F.Intrinsic.String.RPad(V.Local.sDescription," ",30,V.Local.sDescription)
+				F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).QTY_ORDER!FieldVal,"00000000.0000",V.Local.sQTY)
+				F.Intrinsic.String.RPad(V.Local.sQTY," ",16,V.Local.sQTY)
+				F.Intrinsic.Date.DateAddWorkdays(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,-1,62,V.Local.dDueDate)
+				F.Intrinsic.String.Format(V.Local.dDueDate,"MMDDYY",V.Local.sDueDate)
+				F.Intrinsic.String.Concat(V.Local.sJCM,V.Local.sPart,"  ",V.Local.sRouter,V.Local.sDescription,V.Local.sCustomer,V.Local.sPO,V.Local.sQTY,V.Local.sMMDDYY,V.Local.sDueDate,V.Local.sJCM)
+				'Filler		130-342
+				F.Intrinsic.String.RPad(V.Local.sJCM," ",342,V.Local.sJCM)
+				'P/L		343-344
+				'Price		345-360	8.4
+				'Cust Qty	361-376	8.4
+				'Part Desc	377-406
+				'Priority	407-409
+				F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).PART!FieldValTrim,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPart",V.Local.sSQL)
+				F.Intrinsic.Control.If(V.ODBC.con!rstPart.EOF,=,False)
+					V.Local.sPL.Set(V.ODBC.con!rstPart.FieldValTrim!PRODUCT_LINE)
+				F.Intrinsic.Control.EndIf
+				F.ODBC.con!rstPart.Close
+				F.Intrinsic.String.RPad(V.Local.sPL," ",2,V.Local.sPL)
+				F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).COST!FieldValFloat,"00000000.0000",V.Local.sPrice)
+				F.Intrinsic.String.RPad(V.Local.sPrice," ",16,V.Local.sPrice)
+				F.Intrinsic.String.Concat(V.Local.sJCM,V.Local.sPL,V.Local.sPrice,V.Local.sQTY,V.Local.sDescription,"050",V.Local.sJCM)
+				'Filler		410-495
+				F.Intrinsic.String.RPad(V.Local.sJCM," ",495,V.Local.sJCM)
+				'Check to see if there is a drill code
+				F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iFor).DRILL_CODE!FieldValTrim,=,"")
+					V.Local.bDrill.Set(False)
+				F.Intrinsic.Control.Else
+					V.Local.bDrill.Set(True)
+				F.Intrinsic.Control.EndIf
+				'Load the template router lines to the Job Cost Operations Master Upload Variable - all quanities multiplied by dtMain.Square_Ft
+				F.Intrinsic.Control.DoUntil(V.ODBC.con!rstRTR.EOF,=,True)
+					V.Local.sSeq.Set(V.ODBC.con!rstRTR.FieldValTrim!LINE_ROUTER)
+					F.Intrinsic.String.Format(V.Local.sSeq,"000000",V.Local.sSeq)
+					V.Local.sOpCode.Set(V.ODBC.con!rstRTR.FieldValTrim!OPERATION)
+					F.Intrinsic.String.RPad(V.Local.sOpCode," ",6,V.Local.sOpCode)
+					V.Local.sDescription.Set(V.ODBC.con!rstRTR.FieldValTrim!DESC_RT_LINE)
+					F.Intrinsic.String.RPad(V.Local.sDescription," ",30,V.Local.sDescription)
+					V.Local.sUOM.Set(V.ODBC.con!rstRTR.FieldValTrim!UM_INVENTORY)
+					F.Intrinsic.String.RPad(V.Local.sUOM," ",2,V.Local.sUOM)
+					V.Local.sPart.Set(V.ODBC.con!rstRTR.FieldValTrim!PART_WC_OUTSIDE)
+					F.Intrinsic.String.RPad(V.Local.sPart," ",20,V.Local.sPart)
+					F.Intrinsic.String.Format(V.ODBC.con!rstRTR.FieldValTrim!SET_UP,"00000000.0000",V.Local.sSetup)
+					F.Intrinsic.String.RPad(V.Local.sSetup," ",16,V.Local.sSetup)
+					F.Intrinsic.String.Format(V.ODBC.con!rstRTR.FieldValTrim!UNIT_QTY,"00000000.0000",V.Local.sUnitQty)
+					F.Intrinsic.String.RPad(V.Local.sUnitQty," ",16,V.Local.sUnitQty)
+					'Get the workcenter rate or inventory part cost
+					F.Intrinsic.String.IsInString(V.Local.sPart,"*",True,V.Local.bInstr)
+					F.Intrinsic.String.Len(V.Local.sPart.Trim,V.Local.iLen)
+					F.Intrinsic.Control.If(V.Local.iLen,=,4)
+						F.Intrinsic.Control.If(V.Local.bInstr,=,True)
+							F.Intrinsic.String.Build("select A.WORK_GROUP, A.PROTOTYPE_WC, B.STANDARD_COST from V_WORKGROUP_HEAD A left outer join V_WORKCENTERS B on A.PROTOTYPE_WC = B.MACHINE where A.WORK_GROUP = '{0}'",V.Local.sPart,V.Local.sSQL)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Build("select * from V_WORKCENTERS where MACHINE = '{0}'",V.Local.sPart,V.Local.sSQL)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.Connection!con.OpenLocalRecordsetRO("rstWC",V.Local.sSQL)
+						F.Intrinsic.Control.If(V.ODBC.con!rstWC.EOF,=,False)
+							F.Intrinsic.String.Format(V.ODBC.con!rstWC.FieldValTrim!STANDARD_COST,"00000000.0000",V.Local.sRate)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Format(V.ODBC.con!rstRTR.FieldValTrim!RATE,"00000000.0000",V.Local.sRate)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.con!rstWC.Close
+					F.Intrinsic.Control.Else
+						F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.Local.sPart,V.Local.sSQL)
+						F.ODBC.Connection!con.OpenLocalRecordsetRO("rstInv",V.Local.sSQL)
+						F.Intrinsic.Control.If(V.ODBC.con!rstInv.EOF,=,False)
+							F.Intrinsic.String.Format(V.ODBC.con!rstInv.FieldValTrim!AMT_COST,"00000000.0000",v.Local.sRate)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Format(V.ODBC.con!rstRTR.FieldValTrim!RATE,"00000000.0000",V.Local.sRate)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.con!rstInv.Close
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.String.RPad(V.Local.sRate," ",16,V.Local.sRate)
+					'Replace the machining work center with the one selected in the data table
+					F.Intrinsic.Control.If(V.ODBC.con!rstRTR.FieldValTrim!OPERATION,=,"MACH")
+					F.Intrinsic.Control.AndIf(V.ODBC.con!rstRTR.FieldValTrim!PART_WC_OUTSIDE,<>,V.DataTable.dtMain(V.Local.iFor).MCCODE!FieldValTrim)
+						F.Intrinsic.String.RPad(V.DataTable.dtMain(V.Local.iFor).MCCODE!FieldValTrim," ",20,V.Local.sPart)
+					F.Intrinsic.Control.EndIf
+					'Replace the part and description for MATERIAL
+					F.Intrinsic.Control.If(V.ODBC.con!rstRTR.FieldValTrim!PART_WC_OUTSIDE,=,"MATERIAL")
+						F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).MATL!FieldValTrim,V.Local.sSQL)
+						F.ODBC.Connection!con.OpenLocalRecordsetRO("rstMatl",V.Local.sSQL)
+						F.Intrinsic.Control.If(V.ODBC.con!rstMatl.EOF,=,False)
+							F.Intrinsic.String.RPad(V.ODBC.con!rstMatl.FieldValTrim!PART," ",20,V.Local.sPart)
+							F.Intrinsic.String.RPad(V.ODBC.con!rstMatl.FieldValTrim!DESCRIPTION," ",30,V.Local.sDescription)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.con!rstMatl.Close
+					F.Intrinsic.Control.EndIf
+					'Replace the part and description for FINISH
+					F.Intrinsic.Control.If(V.ODBC.con!rstRTR.FieldValTrim!PART_WC_OUTSIDE,=,"FINISH")
+						F.Intrinsic.String.Build("select * from V_INVENTORY_ALL where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).FINISH!FieldValTrim,V.Local.sSQL)
+						F.ODBC.Connection!con.OpenLocalRecordsetRO("rstFins",V.Local.sSQL)
+						F.Intrinsic.Control.If(V.ODBC.con!rstFins.EOF,=,False)
+							F.Intrinsic.String.RPad(V.ODBC.con!rstFins.FieldValTrim!PART," ",20,V.Local.sPart)
+							F.Intrinsic.String.RPad(V.ODBC.con!rstFins.FieldValTrim!DESCRIPTION," ",30,V.Local.sDescription)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.con!rstFins.Close
+					F.Intrinsic.Control.EndIf
+					'Job		1-6
+					'Suffix		7-9
+					'Seq		10-15
+					'Op Code	16-21
+					'Set Up flg	22-22
+					'LMOC		23-23
+					'Desc		24-53
+					'UOM		54-55
+					'PWC		56-75
+					'Router		76-95
+					'Router Seq	96-101
+					'Setup Time	102-117 8.4
+					'Qty/1		118-133	8.4
+					'Burden Rt	134-149	8.4
+					'Est Hrs	150-165 8.4
+					'Filler		166-225
+					'Signoff	226-233
+					'Comp Req	234-234
+					'Filler		235-251
+					'POPULATE THE TIME FOR DRILL CODES
+					F.Intrinsic.Control.If(V.ODBC.con!rstRTR.FieldValTrim!OPERATION,=,"DRILL")
+					F.Intrinsic.Control.AndIf(V.Local.bDrill,=,True)
+						F.Intrinsic.String.Build("select USER54 from INV_EXTRA where PART = '{0}'",V.DataTable.dtMain(V.Local.iFor).DRILL_CODE!FieldValTrim,V.Local.sSQL)
+						F.ODBC.Connection!con.OpenLocalRecordsetRO("rstDC",V.Local.sSQL)
+						F.Intrinsic.Control.If(V.ODBC.con!rstDC.EOF,=,False)
+							F.Intrinsic.Math.Div(V.ODBC.con!rstDC.FieldValFloat!USER54,60,V.Local.fUnitQty)
+							F.Intrinsic.String.Format(V.Local.fUnitQty,"00000000.0000",V.Local.sUnitQty.Set)
+							F.Intrinsic.String.RPad(V.Local.sUnitQty," ",16,V.Local.sUnitQty)
+						F.Intrinsic.Control.EndIf
+						F.ODBC.con!rstDC.Close
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.String.Concat(V.Local.sWO,"   ",V.Local.sSeq,V.Local.sOpCode," ",V.ODBC.con!rstRTR.FieldValTrim!LMO,V.Local.sDescription,V.Local.sUOM,V.Local.sPart,V.Local.sRouter,V.Local.sSeq,V.Local.sSetup,V.Local.sUnitQty,V.Local.sRate,V.Local.sLine)
+					F.Intrinsic.Control.If(V.ODBC.con!rstRTR.FieldValTrim!OPERATION,=,"DRILL")
+					F.Intrinsic.Control.AndIf(V.Local.bDrill,=,False)
+					F.Intrinsic.Control.ElseIf(V.Local.sPart.Trim,=,"FINISH",and,V.DataTable.dtMain(V.Local.iFor).FINISH!FieldValTrim,=,"")
+					F.Intrinsic.Control.Else
+						F.Intrinsic.Control.If(V.Local.sJCOM.Trim,=,"")
+							V.Local.sJCOM.Set(V.Local.sLine)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Concat(V.Local.sJCOM,V.Ambient.NewLine,V.Local.sLine,V.Local.sJCOM)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+					F.ODBC.con!rstRTR.MoveNext
+				F.Intrinsic.Control.Loop
+				'String to File for JCM and JCOM
+				F.Intrinsic.String.Concat(V.Caller.FilesDir,"\JBMDLA.TXT",V.Local.sFile)
+				F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sJCM)
+				F.Intrinsic.String.Concat(V.Caller.FilesDir,"\JOBCOST.TXT",V.Local.sFile)
+				F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sJCOM)
+				'Upload the Job Cost Master
+				F.Intrinsic.String.Concat("UPLJBMUL/A!*!",V.Caller.CompanyCode,V.Local.sParameters)
+				F.Global.General.CallWrapperSync(50,V.Local.sParameters)
+				'Upload the Job Cost Operations Master
+				F.Intrinsic.String.Concat("UPLJOBST/A!*!",V.Caller.CompanyCode,V.Local.sParameters)
+				F.Global.General.CallWrapperSync(50,V.Local.sParameters)
+				V.Local.sJCM.Set("")
+				V.Local.sJCOM.Set("")
+				'Sechedule the job
+				F.Global.APS.ScheduleJob(V.Local.sWO,"","B",V.Local.dDueDate)
+				'Add line to ORDER_TO_WO
+				F.Intrinsic.String.Build("select * from ORDER_TO_WO where ORDER_NO = '{0}' and ORDER_LINE = '{1}0'",V.Local.sOrder,V.DataTable.dtMain(V.Local.iFor).LINE!FieldValTrim,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenLocalRecordsetRW("rstORDER",V.Local.sSQL)
+				F.Intrinsic.Control.If(V.ODBC.con!rstORDER.EOF,=,True)
+					F.ODBC.con!rstORDER.AddNew
+					F.ODBC.con!rstORDER.Set!JOB(V.Local.sWO)
+					F.ODBC.con!rstORDER.Set!SUFFIX("")
+					F.ODBC.con!rstORDER.Set!ORDER_NO(V.Local.sOrder)
+					F.Intrinsic.String.RPad(V.DataTable.dtMain(V.Local.iFor).LINE!FieldValTrim,"0",4,V.Local.sOrderLine)
+					F.ODBC.con!rstORDER.Set!ORDER_LINE(V.Local.sOrderLine)
+					F.ODBC.con!rstORDER.Set!MQD_SEQ("000")
+					F.ODBC.con!rstORDER.Set!PART(V.DataTable.dtMain(V.Local.iFor).PART!FieldValTrim)
+					F.ODBC.con!rstORDER.Set!LOCATION("")
+					F.Intrinsic.String.Build("{1} X {0}",V.DataTable.dtMain(V.Local.iFor).LENGTH!FieldValFloat,V.DataTable.dtMain(V.Local.iFor).WIDTH!FieldValFloat,V.Local.sDescription)
+					F.ODBC.con!rstORDER.Set!DESCRIPTION(V.Local.sDescription.Trim)
+					F.ODBC.con!rstORDER.Set!QTY_ORD(V.Local.sQTY.Trim)
+					F.ODBC.con!rstORDER.Set!QTY_WO(V.Local.sQTY.Trim)
+					F.ODBC.con!rstORDER.Set!QTY_COMPLETE("0.0000")
+					'YYYYMMDD
+					F.Intrinsic.String.Format(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,"YYYYMMDD",V.Local.sDueDate)
+					F.ODBC.con!rstORDER.Set!DATE_ORDER_DUE(V.Local.sDueDate)
+					F.Intrinsic.Date.DateAddWorkdays(V.DataTable.dtMain(V.Local.iFor).DATE_PROMISE!FieldValTrim,-1,62,V.Local.dDueDate)
+					F.Intrinsic.String.Format(V.Local.dDueDate,"YYYYMMDD",V.Local.sDueDate)
+					F.ODBC.con!rstORDER.Set!DATE_JOB_DUE(V.Local.sDueDate)
+					F.ODBC.con!rstORDER.Set!USERID(V.Caller.User)
+					F.ODBC.con!rstORDER.Set!SHIPTO_ID(V.Passed.000061.Trim)
+					F.ODBC.con!rstORDER.Update
+				F.Intrinsic.Control.EndIf
+				F.ODBC.con!rstORDER.Close
+				'Update the starting WO number
+				F.Intrinsic.Math.Add(V.Local.iWO,1,V.Local.iWO)
+				F.ODBC.con!rstWO.Set!F_LONG(V.Local.iWO)
+				F.ODBC.con!rstWO.Update
+				'Update the WO field in dtMain
+				F.Data.DataTable.SetValue("dtMain",V.Local.iFor,"WO",V.Local.sWO.Trim)
+				F.ODBC.con!rstWO.Close
+			F.Intrinsic.Control.EndIf
+			F.ODBC.con!rstRTR.Close
+		F.Intrinsic.Control.Endif
+		F.ODBC.con!rstSel.Close
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+
+Program.Sub.Upload_WO.End
+
+Program.Sub.cmdUpload_Click.Start
+F.Intrinsic.UI.InvokeWaitDialog("Processing Order Data","Order Entry")
+'Apply discounts to the order lines
+F.Intrinsic.Control.CallSub(apply_discounts)
+'Create an inventory batch and upload it
+F.Intrinsic.Control.CallSub(upload_inventory)
+'Create the sales order lines
+F.Intrinsic.Control.CallSub(upload_oe_lines)
+'Save Datatable to the database
+F.Intrinsic.Control.CallSub(cmdsave_click)
+F.Intrinsic.UI.CloseWaitDialog
+Program.Sub.cmdUpload_Click.End
+
+Program.Sub.Upload_Batch_Notes.Start
+V.Local.sOrder.Declare
+V.Local.sSQL.Declare
+
+'SALES ORDER
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+
+F.Intrinsic.Control.If(V.Screen.f_Main!txtBatch.Text,<>,"")
+	F.Intrinsic.String.Build("select * from GAB_4483_BATCH_NOTES where ORDER_NO = '{0}'",V.Local.sOrder,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRW("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,True)
+		F.ODBC.con!rstSel.AddNew
+	F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstSel.Set!ORDER_NO(V.Local.sOrder)
+		F.ODBC.con!rstSel.Set!NOTES(V.Screen.f_Main!txtBatch.Text)
+		F.ODBC.con!rstSel.Update
+	F.ODBC.con!rstSel.Close
+F.Intrinsic.Control.EndIf
+
+Program.Sub.Upload_Batch_Notes.End
+
+Program.Sub.ValidateLength.Start
+V.Local.iRow.Declare
+V.Local.sSQL.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,<>,"")
+F.Intrinsic.Control.AndIf(V.DataTable.dtMain(V.Local.iRow).LENGTH!FieldValFloat,>,0)
+	F.Intrinsic.String.Build("select * from INV_EXTRA where PART = '{0}'",V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).LENGTH!FieldValFloat,<,V.ODBC.con!rstSel.FieldValFloat!USER6)
+			F.Intrinsic.UI.Msgbox("Length Is Less Than The Minimum Length For This Part Code","Order Entry")
+		F.Intrinsic.Control.ElseIf(V.DataTable.dtMain(V.Local.iRow).LENGTH!FieldValFloat,>,V.ODBC.con!rstSel.FieldValFloat!USER8)
+			F.Intrinsic.UI.Msgbox("Length Is Greater Than The Maximum Length For This Part Code","Order Entry")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+Program.Sub.ValidateLength.End
+
+Program.Sub.ValidateWidth.Start
+V.Local.iRow.Declare
+V.Local.sSQL.Declare
+
+V.Local.iRow.Set(V.Args.iRowID)
+
+F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,<>,"")
+F.Intrinsic.Control.AndIf(V.DataTable.dtMain(V.Local.iRow).WIDTH!FieldVal,>,0)
+	F.Intrinsic.String.Build("select * from INV_EXTRA where PART = '{0}'",V.DataTable.dtMain(V.Local.iRow).PART_CODE!FieldValTrim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstSel",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstSel.EOF,=,False)
+		F.Intrinsic.Control.If(V.DataTable.dtMain(V.Local.iRow).WIDTH!FieldValFloat,<,V.ODBC.con!rstSel.FieldValFloat!USER5)
+			F.Intrinsic.UI.Msgbox("Width Is Less Than The Minimum Width For This Part Code","Order Entry")
+		F.Intrinsic.Control.ElseIf(V.DataTable.dtMain(V.Local.iRow).WIDTH!FieldValFloat,>,V.ODBC.con!rstSel.FieldValFloat!USER7)
+			F.Intrinsic.UI.Msgbox("Width Is Greater Than The Maximum Width For This Part Code","Order Entry")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+Program.Sub.ValidateWidth.End
+
+Program.Sub.Comments.Start
+${$0$}$4483 ORDER ENTRY$}$JTW$}$3/14/2017 10:30:53 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$This program will display a custom order entry form that allows the user to enter product information in order to produce order lines, routers, and work orders.  It will generate a part number based on the properties entered and selected. Part dimensions are to the nearest hundredth.
+Program.Sub.Comments.End
